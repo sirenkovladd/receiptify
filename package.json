@@ -1,0 +1,16 @@
+{
+  "name": "receiptify",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "vanjs-core": "^1.5.5",
+    "vanjs-prerender": "^0.1.0"
+  }
+}
