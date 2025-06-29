@@ -254,7 +254,12 @@ const GroceryItems = (items: State<ReactItem[]>) => {
 						input({
 							type: "number",
 							value: item.price,
-							oninput: (e) => {
+							oninput: (e: Event) => {
+								// Ensure the event target is an HTMLInputElement before accessing its value
+								const target = e.target as HTMLInputElement;
+								if (!target) return; // If target is unexpectedly null, exit
+								// Attempt to convert the input value to a number and update the state
+								// If conversion fails (e.g., the input is not a number), don't update the state to avoid errors
 								item.price.val = Number(e.target.value);
 							},
 							step: "0.01",
@@ -271,6 +276,16 @@ const GroceryItems = (items: State<ReactItem[]>) => {
 					),
 				),
 			),
+		() => {
+			const total = items.val.reduce(
+				(sum, item) => sum + item.count.val * item.price.val,
+				0,
+			);
+			return div(
+				{ class: "items-total" },
+				`Total: $${total.toFixed(2)}`,
+			);
+		},
 		button(
 			{
 				onclick: () => {
@@ -297,6 +312,9 @@ const AddPage = () => {
 	const type = van.state("grocery");
 	const items = van.state<ReactItem[]>([]);
 	const storeNamesList = van.state<string[]>([]);
+	const imageUrl = van.state<string | null>(null);
+	const totalAmount = van.state(0);
+	const description = van.state("");
 
 	const fetchStoreNames = async () => {
 		try {
@@ -327,7 +345,10 @@ const AddPage = () => {
 				body: formData,
 			});
 			if (!response.ok) throw new Error((await response.json()).message);
-			const receipt: ParsedReceipt = await response.json();
+			const receipt: ParsedReceipt & {
+				totalAmount?: number;
+				imageUrl?: string;
+			} = await response.json();
 			if (receipt.storeName) {
 				storeName.val = receipt.storeName;
 			}
@@ -338,13 +359,86 @@ const AddPage = () => {
 				count: van.state(item.count),
 				price: van.state(item.price),
 			}));
-			statusMessage.val = ""; // Clear initial message
+			totalAmount.val =
+				receipt.totalAmount ||
+				items.val.reduce(
+					(sum, item) => sum + item.count.val * item.price.val,
+					0,
+				);
+			imageUrl.val = receipt.imageUrl || null;
+			statusMessage.val = "Analysis complete. Please review and save.";
 		} catch (error: any) {
 			statusMessage.val = `Error: ${error.message || "Analysis failed."}`;
 		}
 	};
 
-	const handleSave = async () => {};
+	const handleSave = async () => {
+		statusMessage.val = "Saving...";
+		try {
+			const isGrocery = type.val === "grocery";
+			const finalTotalAmount = isGrocery
+				? items.val.reduce(
+						(sum, item) => sum + item.count.val * item.price.val,
+						0,
+					)
+				: totalAmount.val;
+
+			const receiptData = {
+				storeName: storeName.val,
+				datetime: datetime.val,
+				type: type.val,
+				totalAmount: finalTotalAmount,
+				description: description.val,
+				items: isGrocery
+					? items.val.map((i) => ({
+							name: i.name.val,
+							count: i.count.val,
+							price: i.price.val,
+						}))
+					: [],
+				imageUrl: imageUrl.val,
+			};
+
+			const response = await fetch("/api/receipts", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(receiptData),
+			});
+
+			if (!response.ok) {
+				const errData = await response.json();
+				throw new Error(errData.message || "Failed to save receipt");
+			}
+
+			jumpPath("/dashboard");
+		} catch (err: any) {
+			statusMessage.val = `Error: ${err.message}`;
+		}
+	};
+
+	const OtherReceiptDetails = () =>
+		div(
+			div(
+				label("Total Amount:"),
+				input({
+					type: "number",
+					step: "0.01",
+					min: 0,
+					value: totalAmount,
+					oninput: (e) =>
+						(totalAmount.val = Number((e.target as HTMLInputElement).value)),
+				}),
+			),
+			div(
+				label("Description:"),
+				textarea({
+					value: description,
+					oninput: (e) =>
+						(description.val = (e.target as HTMLTextAreaElement).value),
+					placeholder: "e.g., Dinner with colleagues",
+				}),
+			),
+		);
 
 	return div(
 		h1("Add New Receipt"),
@@ -379,7 +473,7 @@ const AddPage = () => {
 						return date.toISOString().slice(0, 19); // Format for datetime-local
 					},
 					oninput: (e) => {
-						const inputDate = new Date(e.target.value);
+						const inputDate = new Date((e.target as HTMLInputElement).value);
 						// Convert to UTC and format for database
 						datetime.val = inputDate.toISOString();
 					},
@@ -401,7 +495,7 @@ const AddPage = () => {
 					option({ value: "other" }, "Other"),
 				),
 			),
-			() => (type.val === "grocery" ? GroceryItems(items) : ""),
+			() => (type.val === "grocery" ? GroceryItems(items) : OtherReceiptDetails()),
 			button({ onclick: handleSave }, "Save Receipt"),
 		),
 	);
