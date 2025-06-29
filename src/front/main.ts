@@ -1,10 +1,41 @@
 import { addRoute, createRouter, findRoute } from "rou3";
-import van from "vanjs-core";
+import van, { type State } from "vanjs-core";
+import type { ParsedReceipt } from "../back/analyzer";
 import "./main.css";
 
-const { div, h1, p, button, input, form, label, nav, a } = van.tags;
+const {
+	div,
+	h1,
+	p,
+	button,
+	input,
+	form,
+	label,
+	nav,
+	a,
+	h3,
+	span,
+	textarea,
+	select,
+	option,
+	datalist,
+} = van.tags;
 
 // Initialize authUser from localStorage
+
+interface Receipt {
+	id: number;
+	userId: number;
+	type: string;
+	storeName: string | null;
+	datetime: string;
+	imageUrl: string | null;
+	totalAmount: number;
+	description: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
 const getStoredUser = () => {
 	try {
 		const user = localStorage.getItem("authUser");
@@ -68,9 +99,9 @@ const NavLink = (path: string, text: string) =>
 const Header = () => {
 	return nav(
 		NavLink("/", "Home"),
-		() => (authUser.val ? '' : NavLink("/login", "Login")),
-		() => (authUser.val ? NavLink("/dashboard", "Dashboard") : ''),
-		() => (authUser.val ? NavLink("/add", "Add Receipt") : ''),
+		() => (authUser.val ? "" : NavLink("/login", "Login")),
+		() => (authUser.val ? NavLink("/dashboard", "Dashboard") : ""),
+		() => (authUser.val ? NavLink("/add", "Add Receipt") : ""),
 		() =>
 			authUser.val
 				? a(
@@ -88,8 +119,8 @@ const Header = () => {
 							},
 						},
 						"Logout",
-				  )
-				: '',
+					)
+				: "",
 	);
 };
 
@@ -131,7 +162,10 @@ const LoginPage = () => {
 			() => (error.val ? p({ class: "error" }, error.val) : ""),
 			div(
 				label("Email"),
-				input({ type: "email", oninput: (e) => (email.val = (e.target as HTMLInputElement).value) }),
+				input({
+					type: "email",
+					oninput: (e) => (email.val = (e.target as HTMLInputElement).value),
+				}),
 			),
 			div(
 				label("Password"),
@@ -145,16 +179,136 @@ const LoginPage = () => {
 	);
 };
 
-const DashboardPage = () =>
-	div(
-		h1("Dashboard"),
-		p("Here are your saved transactions."),
-		// Transaction list will go here
+const DashboardPage = () => {
+	const receipts = van.state<Receipt[]>([]);
+	const loading = van.state(true);
+	const error = van.state<string | null>(null);
+
+	const fetchReceipts = async () => {
+		try {
+			loading.val = true;
+			error.val = null;
+			const response = await fetch("/api/receipts");
+			if (!response.ok) {
+				throw new Error("Failed to fetch receipts");
+			}
+			receipts.val = await response.json();
+		} catch (err: any) {
+			error.val = err.message || "An unknown error occurred.";
+		} finally {
+			loading.val = false;
+		}
+	};
+
+	fetchReceipts();
+
+	return div(h1("Dashboard"), p("Here are your saved transactions."), () => {
+		if (loading.val) return p("Loading receipts...");
+		if (error.val) return p({ class: "error" }, `Error: ${error.val}`);
+		if (receipts.val.length === 0) return p("No receipts found. Add one!");
+
+		return div(
+			{ class: "receipts-list" },
+			receipts.val.map((receipt) =>
+				div(
+					{ class: "receipt-item" },
+					h3(receipt.storeName || "Unnamed Store"),
+					p(`Total: $${receipt.totalAmount.toFixed(2)}`),
+					p(`Date: ${new Date(receipt.datetime).toLocaleString()}`),
+				),
+			),
+		);
+	});
+};
+
+type ReactItem = {
+	name: State<string>;
+	count: State<number>;
+	price: State<number>;
+};
+
+const GroceryItems = (items: State<ReactItem[]>) => {
+	return div(
+		h3("Items"),
+		() =>
+			div(
+				items.val.map((item) =>
+					div(
+						{ class: "item" },
+						input({
+							type: "text",
+							value: item.name,
+							oninput: (e) => {
+								item.name.val = e.target.value;
+							},
+							placeholder: "Item Name",
+						}),
+						input({
+							type: "number",
+							value: item.count,
+							oninput: (e) => {
+								item.count.val = Number(e.target.value);
+							},
+							min: 1,
+						}),
+						input({
+							type: "number",
+							value: item.price,
+							oninput: (e) => {
+								item.price.val = Number(e.target.value);
+							},
+							step: "0.01",
+							min: 0,
+						}),
+						button(
+							{
+								onclick: () => {
+									items.val = items.val.filter((i) => i !== item);
+								},
+							},
+							"Remove",
+						),
+					),
+				),
+			),
+		button(
+			{
+				onclick: () => {
+					items.val = [
+						...items.val,
+						{
+							name: van.state(""),
+							count: van.state(1),
+							price: van.state(0),
+						},
+					];
+				},
+			},
+			"Add Item",
+		),
 	);
+};
 
 const AddPage = () => {
 	const fileInput = input({ type: "file", accept: "image/*" });
 	const statusMessage = van.state("");
+	const storeName = van.state("");
+	const datetime = van.state(new Date().toISOString());
+	const type = van.state("grocery");
+	const items = van.state<ReactItem[]>([]);
+	const storeNamesList = van.state<string[]>([]);
+
+	const fetchStoreNames = async () => {
+		try {
+			const response = await fetch("/api/stores");
+			if (response.ok) {
+				storeNamesList.val = await response.json();
+			}
+		} catch (error) {
+			console.error("Failed to fetch store names:", error);
+		}
+	};
+	fetchStoreNames();
 
 	const handleUpload = async (e: Event) => {
 		e.preventDefault();
@@ -173,18 +327,83 @@ const AddPage = () => {
 				body: formData,
 			});
 			if (!response.ok) throw new Error((await response.json()).message);
-			const result = await response.json();
-			statusMessage.val = `Analysis complete! Total: ${result.total}`;
+			const receipt: ParsedReceipt = await response.json();
+			if (receipt.storeName) {
+				storeName.val = receipt.storeName;
+			}
+			datetime.val = receipt.datetime;
+			type.val = receipt.type;
+			items.val = receipt.items.map((item) => ({
+				name: van.state(item.name),
+				count: van.state(item.count),
+				price: van.state(item.price),
+			}));
+			statusMessage.val = ""; // Clear initial message
 		} catch (error: any) {
 			statusMessage.val = `Error: ${error.message || "Analysis failed."}`;
 		}
 	};
+
+	const handleSave = async () => {};
 
 	return div(
 		h1("Add New Receipt"),
 		p("Upload a photo of your receipt to get started."),
 		form({ onsubmit: handleUpload }, fileInput, button("Upload and Analyze")),
 		() => (statusMessage.val ? p(statusMessage.val) : ""),
+		div(
+			h3("Receipt Details"),
+			div(
+				label({ for: "store-name-input" }, "Store Name:"),
+				input({
+					id: "store-name-input",
+					type: "text",
+					value: storeName,
+					oninput: (e) => {
+						storeName.val = (e.target as HTMLInputElement).value;
+					},
+					list: "store-names-datalist",
+				}),
+				() =>
+					datalist(
+						{ id: "store-names-datalist" },
+						storeNamesList.val.map((name) => option({ value: name })),
+					),
+			),
+			div(
+				label("Date & Time:"),
+				input({
+					type: "datetime-local",
+					value: () => {
+						const date = new Date(datetime.val);
+						return date.toISOString().slice(0, 19); // Format for datetime-local
+					},
+					oninput: (e) => {
+						const inputDate = new Date(e.target.value);
+						// Convert to UTC and format for database
+						datetime.val = inputDate.toISOString();
+					},
+				}),
+			),
+			div(
+				label("Type:"),
+				select(
+					{
+						value: type,
+						onchange: (e) => {
+							type.val = (e.target as HTMLSelectElement).value;
+						},
+					},
+					option({ value: "grocery" }, "Grocery"),
+					option({ value: "restaurant" }, "Restaurant"),
+					option({ value: "gas" }, "Gas"),
+					option({ value: "retail" }, "Retail"),
+					option({ value: "other" }, "Other"),
+				),
+			),
+			() => (type.val === "grocery" ? GroceryItems(items) : ""),
+			button({ onclick: handleSave }, "Save Receipt"),
+		),
 	);
 };
 

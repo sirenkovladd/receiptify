@@ -177,11 +177,7 @@ const _db = new SQL({
 	onconnect: async (client) => {
 		await runMigrations(client || await _db.connect()); // Run migrations when a new connection is established
 	},
-	onclose: (client) => {
-		console.log("Connection closed");
-	},
 });
-await _db`select 1`;
 
 // AsyncLocalStorage to hold the current transaction client
 // If no transaction is active, it will be undefined, and we'll fall back to the main pool.
@@ -300,6 +296,21 @@ export class ReceiptModel {
 			return result as Receipt[];
 		} catch (error) {
 			console.error("Error getting receipts by user ID:", error);
+			throw error;
+		}
+	}
+
+	async getStoreNamesByUserId(userId: number): Promise<string[]> {
+		try {
+			const result = await getDbClient()`
+                SELECT DISTINCT "storeName"
+                FROM receipts
+                WHERE "userId" = ${userId} AND "storeName" IS NOT NULL
+                ORDER BY "storeName" ASC
+            `;
+			return result.map((row: any) => row.storeName as string);
+		} catch (error) {
+			console.error("Error getting store names by user ID:", error);
 			throw error;
 		}
 	}

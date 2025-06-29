@@ -23,3 +23,24 @@ nav a {
 nav a.active {
     text-decoration: underline;
 }
+
+.item {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 0.5rem;
+}
+
+.item input {
+	padding: 0.5rem;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+.item input[type="text"] {
+	flex-grow: 1;
+}
+
+.item input[type="number"] {
+	width: 80px;
+}
