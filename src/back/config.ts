@@ -1,5 +1,6 @@
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-export const PREDICTION_MODEL = "gemma-3-27b-it";
+export const DB_URL = process.env.DB_URL;
+export const PREDICTION_MODEL = process.env.PREDICTION_MODEL;
 
 // It's crucial to have this in your .env file.
 // A 256-bit key is a 64-character hex string.

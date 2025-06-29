@@ -1,5 +1,6 @@
 import { SQL } from "bun";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { DB_URL } from "./config";
 
 // --- Interfaces for Data Models ---
 
@@ -148,7 +149,7 @@ let runMigrations =  async (sql: SQL) => {
 		for (let i = lastAppliedId + 1; i < migrations.length; i++) {
 			console.log(`Applying migration ${i}...`);
 			// Execute the SQL statement for the current migration
-			await sql.unsafe(migrations[i]!);
+			await sql.unsafe(migrations[i] || 'select 1');
 			// Record the applied migration in the tracking table
 			await sql`INSERT INTO migrations (id, name) VALUES (${i}, ${`migration_${i}`})`;
 			console.log(`Successfully applied migration ${i}`);
@@ -167,12 +168,7 @@ let runMigrations =  async (sql: SQL) => {
 
 const _db = new SQL({
 	// Optional configuration
-	hostname: "localhost",
-	port: 5432,
-	database: "mydb", // Changed to a more specific database name
-	username: "user",
-	password: "password",
-
+	url: DB_URL,
 	// Callbacks
 	onconnect: async (client) => {
 		await runMigrations(client || await _db.connect()); // Run migrations when a new connection is established
@@ -252,7 +248,7 @@ export class UserModel {
 			// This method is for authentication purposes only
 			const result =
 				await getDbClient()`SELECT * FROM users WHERE email = ${email}`;
-			return (result[0] as User) || null;
+			return (result[0] as User & { password: string}) || null;
 		} catch (error) {
 			console.error("Error getting user by email for auth:", error);
 			throw error;
@@ -308,7 +304,7 @@ export class ReceiptModel {
                 WHERE "userId" = ${userId} AND "storeName" IS NOT NULL
                 ORDER BY "storeName" ASC
             `;
-			return result.map((row: any) => row.storeName as string);
+			return result.map((row: { storeName: string }) => row.storeName as string);
 		} catch (error) {
 			console.error("Error getting store names by user ID:", error);
 			throw error;
