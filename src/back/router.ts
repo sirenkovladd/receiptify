@@ -2,7 +2,7 @@ import type { RouterTypes } from "bun";
 import { randomBytes } from "node:crypto";
 import { analyzeReceipt } from "./analyzer";
 import { encrypt } from "./crypto";
-import { type User, receiptModel, userModel } from "./db";
+import { type User, receiptModel, userModel, handleNewReceiptUpload } from "./db";
 
 const tokens: Record<string, User> = {};
 
@@ -167,7 +167,18 @@ export const router = {
 				},
 			});
 		},
-		PUT: () => new Response("Hello World"),
+		PUT: async (req) => {
+			const token = req.cookies.get("authUser");
+			if (!token) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const user = await getUserFromToken(token);
+			if (!user) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const receipt = await req.json();
+			const result = await handleNewReceiptUpload(user.id, receipt)
+		},
 	},
 	"/api/receipts/:id": {
 		GET: () => new Response("Hello World"),

@@ -2,6 +2,7 @@ import { addRoute, createRouter, findRoute } from "rou3";
 import van, { type State } from "vanjs-core";
 import type { ParsedReceipt } from "../back/analyzer";
 import "./main.css";
+import type { ReceiptUpload, ReceiptUploadItem } from "../back/db";
 
 const {
 	div,
@@ -383,24 +384,25 @@ const AddPage = () => {
 					)
 				: totalAmount.val;
 
-			const receiptData = {
+			const receiptData: ReceiptUpload = {
 				storeName: storeName.val,
-				datetime: datetime.val,
+				datetime: new Date(datetime.val),
 				type: type.val,
 				totalAmount: finalTotalAmount,
 				description: description.val,
 				items: isGrocery
 					? items.val.map((i) => ({
 							name: i.name.val,
-							count: i.count.val,
-							price: i.price.val,
+							quantity: i.count.val,
+							unitPrice: i.price.val,
 						}))
 					: [],
 				imageUrl: imageUrl.val,
+				tags: []
 			};
 
 			const response = await fetch("/api/receipts", {
-				method: "POST",
+				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(receiptData),
 			});

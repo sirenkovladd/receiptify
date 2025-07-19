@@ -166,14 +166,8 @@ let runMigrations =  async (sql: SQL) => {
 
 // --- Database Connection Setup ---
 
-const _db = new SQL({
-	// Optional configuration
-	url: DB_URL,
-	// Callbacks
-	onconnect: async (client) => {
-		await runMigrations(client || await _db.connect()); // Run migrations when a new connection is established
-	},
-});
+const _db = new SQL({ url: DB_URL });
+runMigrations(await _db.connect());
 
 // AsyncLocalStorage to hold the current transaction client
 // If no transaction is active, it will be undefined, and we'll fall back to the main pool.
@@ -506,10 +500,11 @@ export const receiptItemModel = new ReceiptItemModel();
 export const tagModel = new TagModel();
 export const receiptTagModel = new ReceiptTagModel();
 
-type ReceiptUpload = Omit<Receipt, "id" | "createdAt" | "updatedAt"> & {
+export type ReceiptUpload = Omit<Receipt, "id" | "createdAt" | "updatedAt" | 'userId'> & {
 	tags: string[];
+	items: ReceiptUploadItem[],
 };
-type ReceiptUploadItem = Omit<Product, "id" | "createdAt" | "updatedAt"> & {
+export type ReceiptUploadItem = Omit<Product, "id" | "createdAt" | "updatedAt" | 'lastPrice' | "category"> & {
 	quantity: number;
 	unitPrice: number;
 };
@@ -517,7 +512,6 @@ type ReceiptUploadItem = Omit<Product, "id" | "createdAt" | "updatedAt"> & {
 export async function handleNewReceiptUpload(
 	userId: number,
 	receiptData: ReceiptUpload,
-	items: ReceiptUploadItem[],
 ) {
 	try {
 		await withTransaction(async () => {
@@ -533,7 +527,7 @@ export async function handleNewReceiptUpload(
 			});
 
 			// Assuming receiptData.items and receiptData.tags exist
-			for (const item of items) {
+			for (const item of receiptData.items) {
 				const productId = await productModel.findOrCreateProduct({
 					name: item.name,
 					category: item.category,
