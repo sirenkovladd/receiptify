@@ -18,6 +18,81 @@ export interface ParsedReceipt {
 	datetime: string; // Date in YYYY-MM-DD format
 }
 
+
+const mockResponse = {
+	items: [
+		{
+			name: "EASY OFF OVEN",
+			count: 1,
+			price: 7.99,
+		},
+		{
+			name: "CH ORG TURMERIC",
+			count: 1,
+			price: 2.79,
+		},
+		{
+			name: "MORNING FRESH",
+			count: 1,
+			price: 17.99,
+		},
+		{
+			name: "NEK SUN OIL",
+			count: 1,
+			price: 5.99,
+		},
+		{
+			name: "BOM ELDER HON",
+			count: 1,
+			price: 6.89,
+		},
+		{
+			name: "PHILA SOFT PLAIN",
+			count: 1,
+			price: 6.99,
+		},
+		{
+			name: "PC RED RASPBERR",
+			count: 1,
+			price: 4.99,
+		},
+		{
+			name: "PC WHL STRWBRRS",
+			count: 1,
+			price: 4.99,
+		},
+		{
+			name: "TOMATO GRAPE",
+			count: 1,
+			price: 5.99,
+		},
+		{
+			name: "ORANGE NAVEL LG",
+			count: 1,
+			price: 1.75,
+		},
+		{
+			name: "CARROT",
+			count: 1,
+			price: 1.27,
+		},
+		{
+			name: "CHKN BNLS SKNLS",
+			count: 1,
+			price: 15,
+		},
+		{
+			name: "MASTRO GENOA",
+			count: 1,
+			price: 3.99,
+		},
+	],
+	type: "grocery",
+	storeName: "NOFRILLS",
+	datetime: "2024-03-24 19:23:05",
+	total: 86.61999999999999,
+};
+
 /**
  * Analyzes a receipt image using the Gemini API and extracts structured data.
  *
@@ -30,6 +105,7 @@ export async function analyzeReceipt(
 	imageBase64: string,
 	mimeType: string,
 ): Promise<ParsedReceipt> {
+	return mockResponse;
 	const prompt = `
     Analyze the attached receipt image. Extract the following information and provide the output strictly in a JSON format that matches this TypeScript interface:
 

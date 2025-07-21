@@ -1,6 +1,6 @@
 import { SQL } from "bun";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { DB_URL } from "./config";
+import { randomBytes } from "node:crypto";
 
 // --- Interfaces for Data Models ---
 
@@ -54,6 +54,12 @@ export interface Tag {
 	parentId: number | null; // For hierarchical tags
 	createdAt: Date;
 	updatedAt: Date;
+}
+
+export interface UserToken {
+	id: number;
+	userId: number; // The user this token belongs to
+	hashedToken: string; // Hashed token for security
 }
 
 // --- Database Migrations ---
@@ -115,6 +121,13 @@ const migrations = [
     "tagId" INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY ("receiptId", "tagId") -- Composite primary key ensures a tag is applied only once per receipt
   )`,
+	`CREATE TABLE IF NOT EXISTS user_tokens (
+		id SERIAL PRIMARY KEY,
+		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		"hashedToken" VARCHAR(255) NOT NULL, -- Hashed token for security
+		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 ];
 
 // A unique integer key for our advisory lock.
@@ -166,7 +179,7 @@ let runMigrations =  async (sql: SQL) => {
 
 // --- Database Connection Setup ---
 
-const _db = new SQL({ url: DB_URL });
+const _db = new SQL();
 runMigrations(await _db.connect());
 
 // AsyncLocalStorage to hold the current transaction client
@@ -458,6 +471,9 @@ export class TagModel {
 // New ReceiptTagModel for managing the relationship between receipts and tags
 export class ReceiptTagModel {
 	async addTagsToReceipt(receiptId: number, tagIds: number[]): Promise<void> {
+		if (tagIds.length === 0) {
+			return;
+		}
 		try {
 			// "ON CONFLICT DO NOTHING" gracefully handles cases where the tag is already associated
 			await getDbClient()`INSERT INTO receipt_tags ${tagIds.map((tagId) => ({ receiptId, tagId }))} ON CONFLICT DO NOTHING`;
@@ -492,6 +508,45 @@ export class ReceiptTagModel {
 	}
 }
 
+export class UserTokenModel {
+	async createToken(userId: number, hashedToken: string): Promise<number> {
+		try {
+			const result = await getDbClient()`
+								INSERT INTO user_tokens ("userId", "hashedToken")
+								VALUES (${userId}, ${hashedToken})
+								RETURNING id
+							`;
+			return (result[0] as { id: number }).id;
+		} catch (error) {
+			console.error("Error creating user token:", error);
+			throw error;
+		}
+	}
+
+	async getTokenByUserId(userId: number): Promise<UserToken | null> {
+		try {
+			const result = await getDbClient()`
+								SELECT * FROM user_tokens WHERE "userId" = ${userId}
+							`;
+			return (result[0] as UserToken) || null;
+		} catch (error) {
+			console.error("Error getting user token by user ID:", error);
+			throw error;
+		}
+	}
+
+	async deleteTokenByUserId(userId: number): Promise<void> {
+		try {
+			await getDbClient()`
+								DELETE FROM user_tokens WHERE "userId" = ${userId}
+							`;
+		} catch (error) {
+			console.error("Error deleting user token by user ID:", error);
+			throw error;
+		}
+	}
+}
+
 // Export instances of the models for easy access throughout your application
 export const userModel = new UserModel();
 export const receiptModel = new ReceiptModel();
@@ -499,12 +554,13 @@ export const productModel = new ProductModel();
 export const receiptItemModel = new ReceiptItemModel();
 export const tagModel = new TagModel();
 export const receiptTagModel = new ReceiptTagModel();
+export const userTokenModel = new UserTokenModel();
 
-export type ReceiptUpload = Omit<Receipt, "id" | "createdAt" | "updatedAt" | 'userId'> & {
+export type ReceiptUpload = Omit<Receipt, "id" | "createdAt" | "updatedAt" | 'userId'> & Partial<Pick<Receipt, 'id'>> & {
 	tags: string[];
 	items: ReceiptUploadItem[],
 };
-export type ReceiptUploadItem = Omit<Product, "id" | "createdAt" | "updatedAt" | 'lastPrice' | "category"> & {
+export type ReceiptUploadItem = Omit<Product, "createdAt" | "updatedAt" | 'lastPrice' | 'id'> & Partial<Pick<Product, 'id'>> & {
 	quantity: number;
 	unitPrice: number;
 };
@@ -528,9 +584,9 @@ export async function handleNewReceiptUpload(
 
 			// Assuming receiptData.items and receiptData.tags exist
 			for (const item of receiptData.items) {
-				const productId = await productModel.findOrCreateProduct({
+				const productId = item.id ?? await productModel.findOrCreateProduct({
 					name: item.name,
-					category: item.category,
+					category: item.category ?? null,
 				});
 				await receiptItemModel.createReceiptItem({
 					receiptId: newReceiptId,
@@ -559,4 +615,15 @@ export async function handleNewReceiptUpload(
 		// The transaction would have been rolled back automatically
 		throw new Error("Failed to save receipt data.");
 	}
+}
+
+export async function refreshToken(userId: number): Promise<string> {
+	const token = await withTransaction(async () => {
+		const token = await randomBytes(32);
+		const hashedToken = await Bun.password.hash(token);
+		await userTokenModel.deleteTokenByUserId(userId);
+		await userTokenModel.createToken(userId, hashedToken);
+		return token.toString("base64url");
+	});
+	return token;
 }

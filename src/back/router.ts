@@ -1,13 +1,40 @@
 import type { RouterTypes } from "bun";
 import { randomBytes } from "node:crypto";
 import { analyzeReceipt } from "./analyzer";
-import { encrypt } from "./crypto";
-import { type User, receiptModel, userModel, handleNewReceiptUpload } from "./db";
+import { decrypt, encrypt } from "./crypto";
+import {
+	handleNewReceiptUpload,
+	receiptItemModel,
+	receiptModel,
+	refreshToken,
+	type User,
+	userModel
+} from "./db";
 
-const tokens: Record<string, User> = {};
+const tokens: Record<string, [User, number]> = {};
 
 async function getUserFromToken(session: string) {
-	return tokens[session];
+	if (tokens[session]) {
+		return tokens[session][0];
+	}
+	try {
+		const decrypted = await decrypt(session);
+		const [id, token, timestamp] = decrypted.split(";");
+		if (!timestamp) {
+			return null;
+		}
+		if (+timestamp < new Date().getTime() / 1000) {
+			return null;
+		}
+		const user = await userModel.getUserById(Number(id));
+		if (user) {
+			tokens[session] = [user, +timestamp];
+			return user;
+		}
+		return null;
+	} catch (err) {
+		return null;
+	}
 }
 
 export const router = {
@@ -40,87 +67,6 @@ export const router = {
 					},
 				);
 			}
-
-			return new Response(
-				JSON.stringify({
-					items: [
-						{
-							name: "EASY OFF OVEN",
-							count: 1,
-							price: 7.99,
-						},
-						{
-							name: "CH ORG TURMERIC",
-							count: 1,
-							price: 2.79,
-						},
-						{
-							name: "MORNING FRESH",
-							count: 1,
-							price: 17.99,
-						},
-						{
-							name: "NEK SUN OIL",
-							count: 1,
-							price: 5.99,
-						},
-						{
-							name: "BOM ELDER HON",
-							count: 1,
-							price: 6.89,
-						},
-						{
-							name: "PHILA SOFT PLAIN",
-							count: 1,
-							price: 6.99,
-						},
-						{
-							name: "PC RED RASPBERR",
-							count: 1,
-							price: 4.99,
-						},
-						{
-							name: "PC WHL STRWBRRS",
-							count: 1,
-							price: 4.99,
-						},
-						{
-							name: "TOMATO GRAPE",
-							count: 1,
-							price: 5.99,
-						},
-						{
-							name: "ORANGE NAVEL LG",
-							count: 1,
-							price: 1.75,
-						},
-						{
-							name: "CARROT",
-							count: 1,
-							price: 1.27,
-						},
-						{
-							name: "CHKN BNLS SKNLS",
-							count: 1,
-							price: 15,
-						},
-						{
-							name: "MASTRO GENOA",
-							count: 1,
-							price: 3.99,
-						},
-					],
-					type: "grocery",
-					storeName: "NOFRILLS",
-					datetime: "2024-03-24 19:23:05",
-					total: 86.61999999999999,
-				}),
-				{
-					headers: {
-						"Content-Type": "application/json",
-					},
-				},
-			);
 
 			try {
 				const fileBuffer = await file.arrayBuffer();
@@ -177,13 +123,70 @@ export const router = {
 				return new Response("Unauthorized", { status: 401 });
 			}
 			const receipt = await req.json();
-			const result = await handleNewReceiptUpload(user.id, receipt)
+			try {
+				await handleNewReceiptUpload(user.id, receipt);
+				return new Response("OK", { status: 200 });
+			} catch (err) {
+				console.error("Error handling new receipt upload:", err);
+				return new Response(JSON.stringify({ message: 'Failed to handle new receipt upload.' }), { status: 500 });
+			}
 		},
 	},
 	"/api/receipts/:id": {
-		GET: () => new Response("Hello World"),
-		POST: () => new Response("Hello World"),
-		DELETE: () => new Response("Hello World"),
+		GET: async (req, params) => {
+			const token = req.cookies.get("authUser");
+			if (!token) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const user = await getUserFromToken(token);
+			if (!user) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const receiptId = Number(req.params.id);
+			if (!receiptId) {
+				return new Response("Invalid receipt ID", { status: 400 });
+			}
+			const receipt = await receiptModel.getReceiptById(receiptId);
+			if (!receipt || receipt.userId !== user.id) {
+				return new Response("Receipt not found", { status: 404 });
+			}
+			const items = await receiptItemModel.getItemsByReceiptId(receiptId);
+			
+			return new Response(JSON.stringify({
+				id: receipt.id,
+				photoUrl: receipt.imageUrl,
+				items: receipt.items,
+				// ...other receipt fields if needed
+			}), {
+				headers: { "Content-Type": "application/json" },
+			});
+		},
+		POST: async (req, params) => {
+			const token = req.cookies.get("authUser");
+			if (!token) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const user = await getUserFromToken(token);
+			if (!user) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+			const receiptId = Number(params.id);
+			if (!receiptId) {
+				return new Response("Invalid receipt ID", { status: 400 });
+			}
+			const data = await req.json();
+			// Expecting { photoUrl, items, ... }
+			try {
+				const updated = await receiptModel.updateReceiptById(receiptId, user.id, data);
+				return new Response(JSON.stringify(updated), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				});
+			} catch (err) {
+				console.error("Error updating receipt:", err);
+				return new Response(JSON.stringify({ message: "Failed to update receipt." }), { status: 500 });
+			}
+		},
 	},
 	"/api/receipts/:id/tags": {
 		POST: () => new Response("Hello World"),
@@ -222,8 +225,9 @@ export const router = {
 				const user = await userModel.getUserByEmailWithPassword(email);
 				if (user) {
 					if (await Bun.password.verify(password, user.password)) {
+						const timestamp = new Date().getTime() / 1000 + 60 * 60 * 24;
 						const token = await encrypt(
-							`${user.id};${randomBytes(32).toString("base64url")}`,
+							`${user.id};${randomBytes(32).toString("base64url")};${timestamp}`,
 						);
 						const userSession = {
 							id: user.id,
@@ -233,7 +237,7 @@ export const router = {
 							createdAt: user.createdAt,
 							updatedAt: user.updatedAt,
 						};
-						tokens[token] = userSession;
+						tokens[token] = [userSession, timestamp];
 						req.cookies.set("authUser", token, {
 							httpOnly: true,
 							sameSite: "lax",
@@ -287,5 +291,23 @@ export const router = {
 				},
 			});
 		},
+	},
+	'/api/token/refresh': {
+		POST: async (req) => {
+			const token = req.cookies.get('authUser');
+			if (!token) {
+				return new Response('Unauthorized', { status: 401 });
+			}
+			const user = await getUserFromToken(token);
+			if (!user) {
+				return new Response('Unauthorized', { status: 401 });
+			}
+			const userToken = await refreshToken(user.id);
+			return new Response(JSON.stringify({ token: userToken }), {
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+		}
 	},
 } satisfies Record<string, RouterTypes.RouteValue<string>>;
