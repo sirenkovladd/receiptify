@@ -1,27 +1,27 @@
 body {
-    font-family: sans-serif;
-    margin: 0;
-    background-color: #f4f4f4;
+	font-family: sans-serif;
+	margin: 0;
+	background-color: #f4f4f4;
 }
 
 #app {
-    padding: 20px;
+	padding: 20px;
 }
 
 nav {
-    background-color: #333;
-    padding: 1rem;
-    display: flex;
-    gap: 1rem;
+	background-color: #333;
+	padding: 1rem;
+	display: flex;
+	gap: 1rem;
 }
 
 nav a {
-    color: white;
-    text-decoration: none;
+	color: white;
+	text-decoration: none;
 }
 
 nav a.active {
-    text-decoration: underline;
+	text-decoration: underline;
 }
 
 .item {
@@ -43,4 +43,48 @@ nav a.active {
 
 .item input[type="number"] {
 	width: 80px;
+}
+
+.dashboard-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.filters {
+	display: flex;
+	gap: 1rem;
+	margin-bottom: 1rem;
+	align-items: center;
+}
+
+.filters input,
+.filters select {
+	padding: 0.5rem;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+.receipts-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 1rem;
+}
+
+.receipt-card {
+	background-color: white;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 1rem;
+	text-decoration: none;
+	color: inherit;
+	transition: box-shadow 0.3s ease;
+}
+
+.receipt-card:hover {
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.receipt-card h3 {
+	margin-top: 0;
 }

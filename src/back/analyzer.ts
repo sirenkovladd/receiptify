@@ -18,7 +18,6 @@ export interface ParsedReceipt {
 	datetime: string; // Date in YYYY-MM-DD format
 }
 
-
 const mockResponse = {
 	items: [
 		{
@@ -105,7 +104,9 @@ export async function analyzeReceipt(
 	imageBase64: string,
 	mimeType: string,
 ): Promise<ParsedReceipt> {
-	return mockResponse;
+	if (imageBase64) {
+		return mockResponse;
+	}
 	const prompt = `
     Analyze the attached receipt image. Extract the following information and provide the output strictly in a JSON format that matches this TypeScript interface:
 
@@ -148,7 +149,7 @@ export async function analyzeReceipt(
 	try {
 		// The response text should be a valid JSON string because of `responseMimeType`.
 		return JSON.parse(responseText) as ParsedReceipt;
-	} catch (e) {
+	} catch (_e) {
 		console.error("Failed to parse JSON response from Gemini:", responseText);
 		throw new Error("The response from the AI was not valid JSON.");
 	}

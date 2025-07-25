@@ -29,33 +29,41 @@ const toggleReveal = () => {
 	tokenRevealed.val = !tokenRevealed.val;
 };
 
-const SettingPage = () =>{
+const SettingPage = () => {
 	return div(
-    h1("Settings"),
-    div(
-      p("Your API credential token:"),
+		h1("Settings"),
+		div(
+			p("Your API credential token:"),
 			div(
-				span(
-					{ style: "font-family:monospace;" },
-					() => tokenFetched.val
-						? (tokenRevealed.val ? token.val : "***")
-						: "***"
+				span({ style: "font-family:monospace;" }, () =>
+					tokenFetched.val ? (tokenRevealed.val ? token.val : "***") : "***",
 				),
-				() => tokenFetched.val ?
-					button({
-						onclick: toggleReveal,
+				() =>
+					tokenFetched.val
+						? button(
+								{
+									onclick: toggleReveal,
+									style: "margin-left:8px;",
+									title: tokenRevealed.val ? "Hide token" : "Reveal token",
+								},
+								tokenRevealed.val ? "🙈" : "👁️",
+							)
+						: "",
+				button(
+					{
+						onclick: copyToken,
 						style: "margin-left:8px;",
-						title: tokenRevealed.val ? "Hide token" : "Reveal token"
-					}, tokenRevealed.val ? "🙈" : "👁️") : '',
-				button({
-					onclick: copyToken,
-					style: "margin-left:8px;",
-					disabled: !tokenFetched.val
-				}, "Copy"),
-				button({ onclick: refreshToken, style: "margin-left:8px;" }, "Refresh Token"),
+						disabled: !tokenFetched.val,
+					},
+					"Copy",
+				),
+				button(
+					{ onclick: refreshToken, style: "margin-left:8px;" },
+					"Refresh Token",
+				),
 			),
-		)
-	)
+		),
+	);
 };
 
 export default SettingPage;

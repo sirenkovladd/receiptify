@@ -71,7 +71,11 @@ export async function decrypt(encryptedData: string): Promise<string> {
 	const iv = ivAndCiphertext.slice(0, IV_LENGTH);
 	const ciphertext = ivAndCiphertext.slice(IV_LENGTH);
 
-	const decryptedData = await webcrypto.subtle.decrypt({ name: ALGORITHM, iv }, key, ciphertext);
+	const decryptedData = await webcrypto.subtle.decrypt(
+		{ name: ALGORITHM, iv },
+		key,
+		ciphertext,
+	);
 
 	return new TextDecoder().decode(decryptedData);
 }

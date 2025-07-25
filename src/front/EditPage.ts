@@ -6,25 +6,25 @@ import { jumpPath, routerParam, selectedReceipt } from "./utils";
 const { div, h1 } = van.tags;
 
 const EditPage = () => {
-  const status = van.state("Loading...");
-  van.derive(() => {
-    const id = routerParam.val.id;
-    if (id && id !== selectedReceipt.val?.id) {
-      selectedReceipt.val = null; // Reset before fetching
-      status.val = "Loading...";
-      fetch(`/api/receipts/${id}`)
-        .then(response => response.json())
-        .then(data => {
-          selectedReceipt.val = data;
-        })
-        .catch(error => {
-          console.error("Failed to fetch receipt:", error);
-          status.val = "Failed to load receipt.";
-        });
-    }
-  })
+	const status = van.state("Loading...");
+	van.derive(() => {
+		const id = routerParam.val.id;
+		if (id && id !== selectedReceipt.val?.id) {
+			selectedReceipt.val = null; // Reset before fetching
+			status.val = "Loading...";
+			fetch(`/api/receipts/${id}`)
+				.then((response) => response.json())
+				.then((data) => {
+					selectedReceipt.val = data;
+				})
+				.catch((error) => {
+					console.error("Failed to fetch receipt:", error);
+					status.val = "Failed to load receipt.";
+				});
+		}
+	});
 	const handleSave = async (receiptData: ReceiptUpload) => {
-    const id = routerParam.val.id;
+		const id = routerParam.val.id;
 		const response = await fetch(`/api/receipts/${id}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -40,11 +40,11 @@ const EditPage = () => {
 	};
 
 	return div(h1(""), () => {
-    if (selectedReceipt.val) {
-      return EditForm(selectedReceipt.val, handleSave)
-    }
-    return div(status);
-});
+		if (selectedReceipt.val) {
+			return EditForm(selectedReceipt.val, handleSave);
+		}
+		return div(status);
+	});
 };
 
 export default EditPage;

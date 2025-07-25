@@ -2,6 +2,7 @@ import van, { type State } from "vanjs-core";
 import type { ParsedReceipt } from "../../back/analyzer";
 import type { ReceiptUpload } from "../../back/db";
 import { fetchStoreNames, storeNamesList } from "../utils";
+
 const {
 	div,
 	p,
@@ -77,6 +78,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 					items.val = [
 						...items.val,
 						{
+							id: van.state(null),
 							name: van.state(""),
 							count: van.state(1),
 							price: van.state(0),
@@ -90,29 +92,35 @@ const GroceryItems = (items: State<ItemType[]>) => {
 };
 
 type ItemType = {
-  name: State<string>;
-  count: State<number>;
-  price: State<number>;
-}
+	id: State<number | null>;
+	name: State<string>;
+	count: State<number>;
+	price: State<number>;
+};
 
-export const EditForm = (data: Partial<ReceiptUpload>, onSave: (data: ReceiptUpload) => void) => {
+export const EditForm = (
+	data: Partial<ReceiptUpload>,
+	onSave: (data: ReceiptUpload) => void,
+) => {
 	const fileInput = input({ type: "file", accept: "image/*" });
 	const statusMessage = van.state("");
-	const storeName  = van.state(data.storeName || "");
+	const storeName = van.state(data.storeName || "");
 	const type = van.state(data.type || "grocery");
-  const datetime = van.state(data.datetime || new Date().toISOString());
-	const items = van.state<ItemType[]>(data.items?.map((item) => ({
-		name: van.state(item.name),
-		count: van.state(item.quantity),
-		price: van.state(item.unitPrice),
-    id: van.state(item.id || null),
-   })) || []);
-	
+	const datetime = van.state(data.datetime || new Date().toISOString());
+	const items = van.state<ItemType[]>(
+		data.items?.map((item) => ({
+			id: van.state(item.id || null),
+			name: van.state(item.name),
+			count: van.state(item.quantity),
+			price: van.state(item.unitPrice),
+		})) || [],
+	);
+
 	const imageUrl = van.state<string | null>(data.imageUrl || null);
 	const totalAmount = van.state(data.totalAmount || 0);
 	const description = van.state(data.description || "");
 
-	fetchStoreNames(); 
+	fetchStoreNames();
 
 	const handleUpload = async (e: Event) => {
 		e.preventDefault();
@@ -144,6 +152,7 @@ export const EditForm = (data: Partial<ReceiptUpload>, onSave: (data: ReceiptUpl
 				name: van.state(item.name),
 				count: van.state(item.count),
 				price: van.state(item.price),
+				id: van.state(null),
 			}));
 			totalAmount.val =
 				receipt.totalAmount ||
@@ -180,15 +189,18 @@ export const EditForm = (data: Partial<ReceiptUpload>, onSave: (data: ReceiptUpl
 							name: i.name.val,
 							quantity: i.count.val,
 							unitPrice: i.price.val,
-              category: null,
+							category: null,
+							id: i.id.val,
 						}))
 					: [],
 				imageUrl: imageUrl.val,
 				tags: [],
+				id: data.id,
 			};
 
 			await onSave(receiptData);
 		} catch (err: any) {
+			console.error("Error saving receipt:", err);
 			statusMessage.val = `Error: ${err.message}`;
 		}
 	};

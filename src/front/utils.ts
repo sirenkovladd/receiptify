@@ -46,8 +46,8 @@ export const NavLink = (
 export const storeNamesList = van.state<string[]>([]);
 
 export let fetchStoreNames = async () => {
-  const prev = fetchStoreNames;
-  fetchStoreNames = async () => {};
+	const prev = fetchStoreNames;
+	fetchStoreNames = async () => {};
 	try {
 		const response = await fetch("/api/stores");
 		if (response.ok) {
@@ -55,6 +55,6 @@ export let fetchStoreNames = async () => {
 		}
 	} catch (error) {
 		console.error("Failed to fetch store names:", error);
-    fetchStoreNames = prev;
+		fetchStoreNames = prev;
 	}
 };

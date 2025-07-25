@@ -66,7 +66,7 @@ addRoute(router, undefined, notFoundPath, NotFoundPage);
 
 const isAuthenticated = van.derive(() => {
 	return authUser.val !== null;
-})
+});
 
 const App = () => {
 	const path = page.val;
@@ -76,9 +76,9 @@ const App = () => {
 			jumpPath("/dashboard");
 			return div("Already logged in. Redirecting...");
 		}
-	} else if (['/404', '/'].includes(path)) {
+	} else if (["/404", "/"].includes(path)) {
 		// ignore
-	}else if (!isAuthenticated.val) {
+	} else if (!isAuthenticated.val) {
 		jumpPath("/login");
 		return div("Redirecting to login...");
 	}
