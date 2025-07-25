@@ -318,7 +318,6 @@ textarea.md3-text-field {
 .md3-data-table th {
   background-color: var(--md-sys-color-surface-variant);
   color: var(--md-sys-color-on-surface-variant);
-  text-align: left;
   padding: 16px;
   font-weight: 500;
 }
@@ -326,6 +325,7 @@ textarea.md3-text-field {
 .md3-data-table td {
   padding: 16px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  text-align: center;
 }
 
 .md3-data-table tr:hover {
@@ -377,15 +377,15 @@ textarea.md3-text-field {
   .md3-grid-cols-1\@md {
     grid-template-columns: repeat(1, 1fr);
   }
-  
+
   .md3-grid-cols-2\@md {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .md3-grid-cols-3\@md {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .md3-grid-cols-4\@md {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -556,4 +556,14 @@ textarea.md3-text-field {
   padding: 12px;
   border-radius: var(--md-sys-shape-corner-small);
   background-color: var(--md-sys-color-error-container);
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mb16 {
+  margin-bottom: 16px;
 }

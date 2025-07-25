@@ -27,7 +27,11 @@ export const jumpPath = (path: string) => {
 export const selectedReceipt = van.state<ReceiptUpload | null>(null);
 
 export const NavLink = (
-	opt: { path: string; onclick?: () => void },
+	opt: {
+		path: string;
+		onclick?: () => void;
+		class?: string;
+	},
 	...rest: readonly ChildDom[]
 ) =>
 	a(
@@ -38,7 +42,7 @@ export const NavLink = (
 				opt.onclick?.();
 				jumpPath(opt.path);
 			},
-			class: () => (page.val === opt.path ? "active" : ""),
+			class: () => (page.val === opt.path ? `${opt.class || ""} active` : opt.class || ""),
 		},
 		...rest,
 	);
