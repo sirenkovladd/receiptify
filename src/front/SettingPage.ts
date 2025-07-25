@@ -1,6 +1,6 @@
 import van from "vanjs-core";
 
-const { div, h1, p, button, span } = van.tags;
+const { div, h1, p, button, span, h3 } = van.tags;
 
 const token = van.state<string>("");
 const error = van.state<string | null>(null);
@@ -31,38 +31,55 @@ const toggleReveal = () => {
 
 const SettingPage = () => {
 	return div(
-		h1("Settings"),
+		{ class: "md3-container" },
 		div(
+			{ class: "md3-top-app-bar" },
+			h1({ class: "md3-top-app-bar-title" }, "Settings")
+		),
+		div(
+			{ class: "md3-card md3-card-elevated" },
+			h3("API Credential Token"),
 			p("Your API credential token:"),
 			div(
-				span({ style: "font-family:monospace;" }, () =>
-					tokenFetched.val ? (tokenRevealed.val ? token.val : "***") : "***",
+				{ style: "display: flex; align-items: center; gap: 8px; margin: 16px 0;" },
+				span(
+					{ 
+						style: "font-family: monospace; padding: 12px; background: var(--md-sys-color-surface-variant); border-radius: var(--md-sys-shape-corner-small); flex-grow: 1;",
+						class: "md3-text-field"
+					}, 
+					() => tokenFetched.val ? (tokenRevealed.val ? token.val : "***") : "***"
 				),
 				() =>
 					tokenFetched.val
 						? button(
 								{
+									class: "md3-icon-button",
 									onclick: toggleReveal,
-									style: "margin-left:8px;",
 									title: tokenRevealed.val ? "Hide token" : "Reveal token",
 								},
-								tokenRevealed.val ? "🙈" : "👁️",
+								tokenRevealed.val ? "🙈" : "👁️"
 							)
 						: "",
 				button(
 					{
+						class: "md3-icon-button",
 						onclick: copyToken,
-						style: "margin-left:8px;",
-						disabled: !tokenFetched.val,
+						disabled: () => !tokenFetched.val,
+						title: "Copy token"
 					},
-					"Copy",
+					"📋"
 				),
 				button(
-					{ onclick: refreshToken, style: "margin-left:8px;" },
-					"Refresh Token",
+					{ 
+						class: "md3-icon-button",
+						onclick: refreshToken,
+						title: "Refresh token"
+					},
+					"🔄"
 				),
 			),
-		),
+			() => error.val ? p({ class: "error" }, error.val) : ""
+		)
 	);
 };
 

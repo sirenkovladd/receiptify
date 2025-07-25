@@ -21,7 +21,17 @@ const AddPage = () => {
 		jumpPath("/dashboard");
 	};
 
-	return div(h1("Add New Receipt"), EditForm({}, handleSave));
+	return div(
+		{ class: "md3-container" },
+		div(
+			{ class: "md3-top-app-bar" },
+			h1({ class: "md3-top-app-bar-title" }, "Add New Receipt")
+		),
+		div(
+			{ class: "md3-card md3-card-elevated" },
+			EditForm({}, handleSave)
+		)
+	);
 };
 
 export default AddPage;

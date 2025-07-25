@@ -39,12 +39,22 @@ const EditPage = () => {
 		jumpPath("/dashboard");
 	};
 
-	return div(h1(""), () => {
-		if (selectedReceipt.val) {
-			return EditForm(selectedReceipt.val, handleSave);
-		}
-		return div(status);
-	});
+	return div(
+		{ class: "md3-container" },
+		div(
+			{ class: "md3-top-app-bar" },
+			h1({ class: "md3-top-app-bar-title" }, "Edit Receipt")
+		),
+		div(
+			{ class: "md3-card md3-card-elevated" },
+			() => {
+				if (selectedReceipt.val) {
+					return EditForm(selectedReceipt.val, handleSave);
+				}
+				return div({ class: "md3-card" }, status);
+			}
+		)
+	);
 };
 
 export default EditPage;

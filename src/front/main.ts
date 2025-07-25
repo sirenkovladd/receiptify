@@ -2,6 +2,12 @@ import { addRoute, createRouter, findRoute } from "rou3";
 import van from "vanjs-core";
 import "./main.css";
 
+// Add Google Fonts for Material Design 3
+const link = document.createElement("link");
+link.href = "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap";
+link.rel = "stylesheet";
+document.head.appendChild(link);
+
 import AddPage from "./AddPage";
 import DashboardPage from "./DashboardPage";
 import EditPage from "./EditPage";

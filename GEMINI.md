@@ -40,7 +40,7 @@ The frontend is a single-page application (SPA) built with VanJS.
 *   **Framework:** [VanJS](https://vanjs.org/) is a lightweight, reactive UI framework.
 *   **Routing:** [rou3](https://github.com/lume/rou3) is used for client-side routing. Routes are defined in `src/front/main.ts`.
 *   **State Management:** VanJS's built-in reactive state (`van.state`) is used for managing application state.
-*   **Styling:** A simple stylesheet in `src/front/main.css` is used for styling.
+*   **Styling:** Material Design 3 styling has been implemented in `src/front/main.css` and applied across all frontend components.
 
 ### Frontend File Structure
 
@@ -48,6 +48,15 @@ The frontend is a single-page application (SPA) built with VanJS.
 *   `src/front/utils.ts`: Contains shared state and utility functions, such as `authUser`, `page`, and `jumpPath`.
 *   `src/front/*.ts`: Each file in this directory typically represents a page or a major component of the application (e.g., `HomePage.ts`, `LoginPage.ts`, `DashboardPage.ts`).
 *   `src/front/form/editing.ts`: A component for a form to edit receipt data.
+
+### Material Design 3 Implementation
+
+The frontend has been updated to use Material Design 3 components and styling:
+*   Added Material Design 3 CSS variables and components in `src/front/main.css`
+*   Updated all page components to use MD3 styling (DashboardPage, AddPage, EditPage, LoginPage, SettingPage, HomePage, NotFoundPage)
+*   Enhanced the DashboardPage with filter capabilities and statistics cards
+*   Added a floating action button for adding new receipts
+*   Integrated Google Fonts for Roboto typeface
 
 ## Development Environment
 

@@ -28,30 +28,39 @@ const LoginPage = () => {
 	};
 
 	return div(
-		h1("Login"),
-		form(
-			{ onsubmit: handleLogin },
-			() => (error.val ? p({ class: "error" }, error.val) : ""),
-			div(
-				label("Email"),
-				input({
-					type: "email",
-					oninput: (e) => {
-						email.val = (e.target as HTMLInputElement).value;
-					},
-				}),
-			),
-			div(
-				label("Password"),
-				input({
-					type: "password",
-					oninput: (e) => {
-						password.val = (e.target as HTMLInputElement).value;
-					},
-				}),
-			),
-			button({ type: "submit" }, "Login"),
+		{ class: "md3-container" },
+		div(
+			{ class: "md3-top-app-bar" },
+			h1({ class: "md3-top-app-bar-title" }, "Login")
 		),
+		div(
+			{ class: "md3-card md3-card-elevated", style: "max-width: 400px; margin: 24px auto; padding: 24px;" },
+			form(
+				{ onsubmit: handleLogin },
+				() => (error.val ? p({ class: "error" }, error.val) : ""),
+				div(
+					label("Email"),
+					input({
+						class: "md3-text-field",
+						type: "email",
+						oninput: (e) => {
+							email.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				div(
+					label("Password"),
+					input({
+						class: "md3-text-field",
+						type: "password",
+						oninput: (e) => {
+							password.val = (e.target as HTMLInputElement).value;
+						},
+					}),
+				),
+				button({ class: "md3-button", type: "submit" }, "Login"),
+			),
+		)
 	);
 };
 

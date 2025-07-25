@@ -17,10 +17,9 @@ const {
 	datalist,
 } = van.tags;
 
-// ...GroceryItems component copied from main.ts...
-
 const GroceryItems = (items: State<ItemType[]>) => {
 	return div(
+		{ class: "md3-card" },
 		h3("Items"),
 		() =>
 			div(
@@ -28,6 +27,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 					div(
 						{ class: "item" },
 						input({
+							class: "md3-text-field",
 							type: "text",
 							value: item.name,
 							oninput: (e) => {
@@ -36,6 +36,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 							placeholder: "Item Name",
 						}),
 						input({
+							class: "md3-text-field",
 							type: "number",
 							value: item.count,
 							oninput: (e) => {
@@ -44,6 +45,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 							min: 1,
 						}),
 						input({
+							class: "md3-text-field",
 							type: "number",
 							value: item.price,
 							oninput: (e: Event) => {
@@ -56,11 +58,13 @@ const GroceryItems = (items: State<ItemType[]>) => {
 						}),
 						button(
 							{
+								class: "md3-icon-button",
 								onclick: () => {
 									items.val = items.val.filter((i) => i !== item);
 								},
+								title: "Remove item"
 							},
-							"Remove",
+							"🗑️",
 						),
 					),
 				),
@@ -70,10 +74,11 @@ const GroceryItems = (items: State<ItemType[]>) => {
 				(sum, item) => sum + item.count.val * item.price.val,
 				0,
 			);
-			return div({ class: "items-total" }, `Total: $${total.toFixed(2)}`);
+			return div({ class: "items-total" }, `Total: ${total.toFixed(2)}`);
 		},
 		button(
 			{
+				class: "md3-button",
 				onclick: () => {
 					items.val = [
 						...items.val,
@@ -102,7 +107,11 @@ export const EditForm = (
 	data: Partial<ReceiptUpload>,
 	onSave: (data: ReceiptUpload) => void,
 ) => {
-	const fileInput = input({ type: "file", accept: "image/*" });
+	const fileInput = input({ 
+		class: "md3-text-field",
+		type: "file", 
+		accept: "image/*" 
+	});
 	const statusMessage = van.state("");
 	const storeName = van.state(data.storeName || "");
 	const type = van.state(data.type || "grocery");
@@ -207,9 +216,11 @@ export const EditForm = (
 
 	const OtherReceiptDetails = () =>
 		div(
+			{ class: "md3-grid md3-grid-cols-1@md md3-grid-cols-2" },
 			div(
 				label("Total Amount:"),
 				input({
+					class: "md3-text-field",
 					type: "number",
 					step: "0.01",
 					min: 0,
@@ -222,6 +233,7 @@ export const EditForm = (
 			div(
 				label("Description:"),
 				textarea({
+					class: "md3-text-field",
 					value: description,
 					oninput: (e) => {
 						description.val = (e.target as HTMLTextAreaElement).value;
@@ -232,61 +244,85 @@ export const EditForm = (
 		);
 
 	return div(
-		p("Upload a photo of your receipt to get started."),
-		form({ onsubmit: handleUpload }, fileInput, button("Upload and Analyze")),
-		() => (statusMessage.val ? p(statusMessage.val) : ""),
+		{ class: "md3-grid md3-grid-cols-1@md md3-grid-cols-2" },
 		div(
+			{ class: "md3-card" },
+			p("Upload a photo of your receipt to get started."),
+			form(
+				{ onsubmit: handleUpload },
+				fileInput,
+				button(
+					{ class: "md3-button" },
+					"Upload and Analyze"
+				)
+			),
+			() => (statusMessage.val ? p({ class: "error" }, statusMessage.val) : ""),
+		),
+		div(
+			{ class: "md3-card" },
 			h3("Receipt Details"),
 			div(
-				label({ for: "store-name-input" }, "Store Name:"),
-				input({
-					id: "store-name-input",
-					type: "text",
-					value: storeName,
-					oninput: (e) => {
-						storeName.val = (e.target as HTMLInputElement).value;
-					},
-					list: "store-names-datalist",
-				}),
-				() =>
-					datalist(
-						{ id: "store-names-datalist" },
-						storeNamesList.val.map((name) => option({ value: name })),
-					),
-			),
-			div(
-				label("Date & Time:"),
-				input({
-					type: "datetime-local",
-					value: () => {
-						const date = new Date(datetime.val);
-						return date.toISOString().slice(0, 19);
-					},
-					oninput: (e) => {
-						const inputDate = new Date((e.target as HTMLInputElement).value);
-						datetime.val = inputDate.toISOString();
-					},
-				}),
-			),
-			div(
-				label("Type:"),
-				select(
-					{
-						value: type,
-						onchange: (e) => {
-							type.val = (e.target as HTMLSelectElement).value;
+				{ class: "md3-grid md3-grid-cols-1@md md3-grid-cols-2" },
+				div(
+					label({ for: "store-name-input" }, "Store Name:"),
+					input({
+						id: "store-name-input",
+						class: "md3-text-field",
+						type: "text",
+						value: storeName,
+						oninput: (e) => {
+							storeName.val = (e.target as HTMLInputElement).value;
 						},
-					},
-					option({ value: "grocery" }, "Grocery"),
-					option({ value: "restaurant" }, "Restaurant"),
-					option({ value: "gas" }, "Gas"),
-					option({ value: "retail" }, "Retail"),
-					option({ value: "other" }, "Other"),
+						list: "store-names-datalist",
+					}),
+					() =>
+						datalist(
+							{ id: "store-names-datalist" },
+							storeNamesList.val.map((name) => option({ value: name })),
+						),
+				),
+				div(
+					label("Date & Time:"),
+					input({
+						class: "md3-text-field",
+						type: "datetime-local",
+						value: () => {
+							const date = new Date(datetime.val);
+							return date.toISOString().slice(0, 19);
+						},
+						oninput: (e) => {
+							const inputDate = new Date((e.target as HTMLInputElement).value);
+							datetime.val = inputDate.toISOString();
+						},
+					}),
+				),
+				div(
+					label("Type:"),
+					select(
+						{
+							class: "md3-select",
+							value: type,
+							onchange: (e) => {
+								type.val = (e.target as HTMLSelectElement).value;
+							},
+						},
+						option({ value: "grocery" }, "Grocery"),
+						option({ value: "restaurant" }, "Restaurant"),
+						option({ value: "gas" }, "Gas"),
+						option({ value: "retail" }, "Retail"),
+						option({ value: "other" }, "Other"),
+					),
 				),
 			),
 			() =>
 				type.val === "grocery" ? GroceryItems(items) : OtherReceiptDetails(),
-			button({ onclick: handleSave }, "Save Receipt"),
+			button(
+				{ 
+					class: "md3-button",
+					onclick: handleSave 
+				}, 
+				"Save Receipt"
+			),
 		),
 	);
 };
