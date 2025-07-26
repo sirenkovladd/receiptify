@@ -6,6 +6,7 @@ import { jumpPath, routerParam, selectedReceipt } from "./utils";
 const { div, h1 } = van.tags;
 
 const EditPage = () => {
+	// TODO add delete button
 	const status = van.state("Loading...");
 	van.derive(() => {
 		const id = routerParam.val.id;

@@ -1,5 +1,5 @@
 import van, { type ChildDom } from "vanjs-core";
-import type { ReceiptUpload } from "../back/db";
+import type { ReceiptUpload, Tag } from "../back/db";
 
 const { a } = van.tags;
 
@@ -60,5 +60,21 @@ export let fetchStoreNames = async () => {
 	} catch (error) {
 		console.error("Failed to fetch store names:", error);
 		fetchStoreNames = prev;
+	}
+};
+
+export const tagsList = van.state<Tag[]>([{ name: 'qwe'}, { name: 'asd' }, { name: 'zxc' }]);
+
+export let fetchTags = async () => {
+	const prev = fetchTags;
+	fetchTags = async () => {};
+	try {
+		const response = await fetch("/api/tags");
+		if (response.ok) {
+			tagsList.val = await response.json();
+		}
+	} catch (error) {
+		console.error("Failed to fetch tags:", error);
+		fetchTags = prev;
 	}
 };

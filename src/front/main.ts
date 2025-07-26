@@ -20,6 +20,8 @@ import { authUser, jumpPath, page, routerParam } from "./utils";
 
 const { div } = van.tags;
 
+import type { Tag } from "../back/db";
+
 // Shared state and utilities
 export interface Receipt {
 	id: number;
@@ -32,6 +34,10 @@ export interface Receipt {
 	description: string | null;
 	createdAt: string;
 	updatedAt: string;
+	tags: Tag[];
+	card: string | null;
+	folder: string | null;
+	category: string | null;
 }
 
 // Sync authUser state with localStorage

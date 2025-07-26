@@ -1,7 +1,7 @@
 import van, { type State } from "vanjs-core";
-import type { ParsedReceipt } from "../../back/analyzer";
+import type { ParsedReceipt, Tag } from "../../back/analyzer";
 import type { ReceiptUpload } from "../../back/db";
-import { fetchStoreNames, storeNamesList } from "../utils";
+import { fetchStoreNames, fetchTags, storeNamesList, tagsList } from "../utils";
 
 const {
 	div,
@@ -96,6 +96,78 @@ const GroceryItems = (items: State<ItemType[]>) => {
 	);
 };
 
+const TagInput = (selectedTags: State<Tag[]>) => {
+	const newTagName = van.state("");
+
+	const addTag = (tag: Tag) => {
+		if (!selectedTags.val.find((t) => t.id === tag.id)) {
+			selectedTags.val = [...selectedTags.val, tag];
+		}
+	};
+
+	const removeTag = (tagId: number) => {
+		selectedTags.val = selectedTags.val.filter((t) => t.id !== tagId);
+	};
+
+	const handleAddTag = async () => {
+		const existingTag = tagsList.val.find((t) => t.name === newTagName.val);
+		if (existingTag) {
+			addTag(existingTag);
+			newTagName.val = "";
+		} else {
+			// Create a new tag
+			const response = await fetch("/api/tags", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name: newTagName.val }),
+			});
+			if (response.ok) {
+				const newTag = await response.json();
+				addTag(newTag);
+				tagsList.val = [...tagsList.val, newTag];
+				newTagName.val = "";
+			}
+		}
+	};
+
+	return div(
+		{ class: "md3-card" },
+		h3("Tags"),
+		div(
+			{ class: "flex flex-wrap gap-1" },
+			selectedTags.val.map((tag) =>
+				div(
+					{ class: "md3-chip" },
+					tag.name,
+					button(
+						{
+							class: "md3-icon-button",
+							onclick: () => removeTag(tag.id),
+						},
+						"×",
+					),
+				),
+			),
+		),
+		div(
+			{ class: "flex items-center mt-2" },
+			input({
+				class: "md3-text-field",
+				type: "text",
+				placeholder: "Add a tag",
+				value: newTagName,
+				oninput: (e) => (newTagName.val = e.target.value),
+				list: "tags-datalist",
+			}),
+			datalist(
+				{ id: "tags-datalist" },
+				tagsList.val.map((tag) => option({ value: tag.name })),
+			),
+			button({ class: "md3-button", onclick: handleAddTag }, "Add"),
+		),
+	);
+};
+
 type ItemType = {
 	id: State<number | null>;
 	name: State<string>;
@@ -128,8 +200,10 @@ export const EditForm = (
 	const imageUrl = van.state<string | null>(data.imageUrl || null);
 	const totalAmount = van.state(data.totalAmount || 0);
 	const description = van.state(data.description || "");
+	const tags = van.state<Tag[]>(data.tags || []);
 
 	fetchStoreNames();
+	fetchTags();
 
 	const handleUpload = async (e: Event) => {
 		e.preventDefault();
@@ -203,7 +277,7 @@ export const EditForm = (
 						}))
 					: [],
 				imageUrl: imageUrl.val,
-				tags: [],
+				tags: tags.val.map((t) => t.name),
 				id: data.id,
 			};
 
@@ -316,6 +390,7 @@ export const EditForm = (
 			),
 			() =>
 				type.val === "grocery" ? GroceryItems(items) : OtherReceiptDetails(),
+			TagInput(tags),
 			button(
 				{ 
 					class: "md3-button",

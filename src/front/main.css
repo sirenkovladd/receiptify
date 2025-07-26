@@ -558,6 +558,13 @@ textarea.md3-text-field {
   background-color: var(--md-sys-color-error-container);
 }
 
+.md3-chip-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .flex {
   display: flex;
   align-items: center;

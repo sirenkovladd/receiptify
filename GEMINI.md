@@ -1,3 +1,4 @@
+
 # Gemini Code Assistant Context
 
 This document provides context for the Gemini code assistant to understand the Receiptify project.
@@ -7,6 +8,10 @@ This document provides context for the Gemini code assistant to understand the R
 ## Project Overview
 
 Receiptify is a web application for managing receipts. Users can upload receipt images, which are analyzed by an AI service to extract structured data. The application consists of a frontend and a backend, both written in TypeScript.
+
+## Development Guidelines
+
+- If you know about some improvements or not fully implemented something comment with TODO
 
 ## Backend
 
@@ -24,7 +29,21 @@ The backend is built with Bun and serves a JSON API.
 
 *   `index.ts`: The entry point for the backend server.
 *   `src/back/router.ts`: Defines the API routes and their handlers.
+*   `src/back/routes/`: This directory contains the route definitions, split by functionality.
+    *   `index.ts`: Exports all route classes.
+    *   `auth.ts`: Handles authentication-related routes.
+    *   `receipts.ts`: Manages receipt-related routes.
+    *   `stores.ts`: Provides store-related routes.
+    *   `tags.ts`: Contains tag-related routes.
 *   `src/back/db/index.ts`: Contains the database schema, migrations, and data models.
+
+### Tag API Endpoints
+
+*   **`GET /api/tags`**: Retrieves all tags for the authenticated user.
+*   **`POST /api/tags`**: Creates a new tag. Requires a `name` and optional `parentId` in the request body.
+*   **`DELETE /api/tags/:id`**: Deletes a specific tag by its ID.
+*   **`POST /api/receipts/:id/tags`**: Associates a tag with a receipt. Requires a `tagId` in the request body.
+*   **`DELETE /api/receipts/:receiptId/tags/:tagId`**: Removes a tag's association from a receipt.
 *   `src/back/db/migration.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/db/client.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/analyzer.ts`: Handles receipt image analysis using the Gemini API.

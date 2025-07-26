@@ -2,9 +2,10 @@ import van, { type State } from "vanjs-core";
 import type { Receipt } from "./main";
 import {
 	fetchStoreNames,
-	NavLink,
+	jumpPath,
 	selectedReceipt,
 	storeNamesList,
+	tagsList
 } from "./utils"; // import shared value
 
 const {
@@ -41,6 +42,8 @@ const Chip = (text: string, type: string = "") => {
 const ReceiptsTable = (receipts: Receipt[]) => {
 	const handleReceiptClick = (receipt: Receipt) => {
 		selectedReceipt.val = receipt;
+		// TODO - open in popup
+		jumpPath(`/edit/${receipt.id}`);
 	};
 
 	return table(
@@ -54,12 +57,12 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 				th({ class: "" }, "Folder"),
 				th({ class: "" }, "Tags"),
 				th({ class: "" }, "Category"),
-				th({ class: "" }, "Actions"),
 			),
 		),
 		tbody(
 			...receipts.map((receipt) =>
 				tr(
+					{ onclick: () => handleReceiptClick(receipt) }, // Click handler for each row
 					td(
 						new Date(receipt.datetime).toLocaleDateString("en-US", {
 							year: "numeric",
@@ -82,33 +85,10 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 					td(
 						div(
 							{ class: "flex flex-wrap gap-1" }, // Flex container for multiple tags
-							...(receipt.tags || []).map((tag) => Chip(tag, "tag")), // Tags as chips
+							...(receipt.tags || []).map((tag) => Chip(tag.name, "tag")), // Tags as chips
 						),
 					),
 					td(Chip(receipt.category || "N/A", "category")), // Category chip
-					td(
-						div(
-							{ class: "flex gap-2" },
-							NavLink(
-								{
-									path: `/edit/${receipt.id}`,
-									class: "md3-icon-button", // Use icon button style
-									onclick: () => handleReceiptClick(receipt),
-								},
-								span({ innerHTML: "✏️" }), // Edit icon
-							),
-							button(
-								{
-									class: "md3-icon-button", // Use icon button style
-									onclick: () => {
-										// Implement delete logic here
-										console.log("Delete receipt:", receipt.id);
-									},
-								},
-								span({ innerHTML: "🗑️" }), // Delete icon
-							),
-						),
-					),
 				),
 			),
 		),
@@ -128,6 +108,7 @@ const TransactionTaab = ({
 	filterMaxAmount,
 	filterType,
 	filterStore,
+	filterTags,
 	clearFilters,
 }: {
 	loading: State<boolean>;
@@ -142,8 +123,10 @@ const TransactionTaab = ({
 	filterMaxAmount: State<string>;
 	filterType: State<string>;
 	filterStore: State<string>;
+	filterTags: State<string[]>;
 	clearFilters: () => void;
 }) => {
+	const inputValue = van.state("");
 	return div(
 		// Filters section
 		div(
@@ -195,6 +178,86 @@ const TransactionTaab = ({
 					option({ value: "retail" }, "Retail"),
 					option({ value: "other" }, "Other"),
 				),
+				// Improved TypeAhead input for tags
+				div({ style: "display: flex; flex-direction: column; gap: 8px;" }, () =>
+					div(
+						{
+							class: "md3-text-field-container", // Apply your Material Design container styling here
+							style:
+								"display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border: 1px solid #ccc; padding: 6px 8px; border-radius: 4px; min-height: 48px; background-color: white; position: relative;",
+						},
+						// Display selected tags as chips
+						() => div(filterTags.val.map((tagName) =>
+							div(
+								{ class: "md3-chip md3-chip-filled" },
+								span(tagName),
+								button(
+									{
+										class: "md3-icon-button",
+										style:
+											"margin-left:8px; padding: 0; width: auto; height: 20px; line-height: 1;color: #FFF;",
+										onclick: () => {
+											filterTags.val = filterTags.val.filter(
+												(t) => t !== tagName,
+											);
+										},
+									},
+									"✕",
+								),
+							),
+						)),
+						// The main input field for typing new tags
+						input({
+							class: "md3-text-field",
+							type: "text",
+							placeholder:
+								() => (filterTags.val.length === 0) ? "Filter by tags..." : "", // Placeholder only if no tags
+							value: inputValue, // Bind to local state
+							list: "tags-typeahead-datalist",
+							style:
+								"flex-grow: 1; border: none; outline: none; background: transparent; padding: 0; width: auto;",
+							oninput: (e) => {
+								console.log('input', e, e.target.value)
+								inputValue.val = e.target.value; // Update local state on input
+							},
+							onkeydown: (e) => {
+								if (
+									e.key === "Backspace" &&
+									inputValue.val === "" &&
+									filterTags.val.length > 0
+								) {
+									// Allow deleting last chip with backspace if input is empty
+									filterTags.val = filterTags.val.slice(0, -1);
+								}
+							},
+							onchange: (e) => {
+							console.log('change', e, inputValue.val)
+								// Handles selection from datalist (click or tab)
+								const val = inputValue.val.trim(); // Use current inputValue
+								const match = tagsList.val.find(
+									(tag) => tag.name.toLowerCase() === val.toLowerCase(),
+								);
+								if (match) {
+									if (!filterTags.val.includes(match.name)) {
+										filterTags.val = [...filterTags.val, match.name];
+									}
+									setTimeout(() => {
+										inputValue.val = ""; // Clear input after adding
+									})
+								}
+							},
+						}),
+						// Datalist for type-ahead suggestions
+						() => datalist(
+							{ id: "tags-typeahead-datalist" },
+								tagsList.val
+									.filter((tag) => !filterTags.val.includes(tag.name)) // Only show tags not already selected
+									.map((tag) => option({ value: tag.name })),
+						),
+					),
+				),
+				inputValue,
+
 				input({
 					class: "md3-text-field",
 					type: "date",
@@ -309,6 +372,7 @@ const DashboardPage = () => {
 	const sortBy = van.state("datetime"); // 'datetime', 'totalAmount', 'storeName'
 	const sortOrder = van.state("desc"); // 'asc', 'desc'
 	const activeTab = van.state("transactions"); // 'transactions', 'products', 'analytics'
+	const filterTags = van.state<string[]>([]);
 
 	fetchStoreNames();
 
@@ -354,7 +418,11 @@ const DashboardPage = () => {
 					parseFloat(r.totalAmount) <= parseFloat(filterMaxAmount.val)) &&
 				(!filterType.val || r.type === filterType.val) &&
 				(!filterStore.val ||
-					r.storeName?.toLowerCase().includes(filterStore.val.toLowerCase())),
+					r.storeName?.toLowerCase().includes(filterStore.val.toLowerCase())) &&
+				(!filterTags.val.length ||
+					filterTags.val.every((tag) =>
+						r.tags?.some((t) => t.name.toLowerCase() === tag.toLowerCase()),
+					)),
 		);
 
 		return filtered.sort((a, b) => {
@@ -480,8 +548,10 @@ const DashboardPage = () => {
 						filterMaxAmount,
 						filterType,
 						filterStore,
+						filterTags,
 						clearFilters,
 					})
+					// TODO - implement Products and Analytics tabs
 				: "",
 	);
 };

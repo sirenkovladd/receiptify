@@ -373,6 +373,39 @@ export class TagModel extends Model {
 			throw error;
 		}
 	}
+
+	async getTagById(userId: number, id: number): Promise<Tag | null> {
+		try {
+			const result =
+				await this.db.sql()`SELECT * FROM tags WHERE id = ${id} AND "userId" = ${userId}`;
+			return (result[0] as Tag) || null;
+		} catch (error) {
+			console.error("Error getting tag by ID:", error);
+			throw error;
+		}
+	}
+
+	async deleteTag(userId: number, tagId: number): Promise<void> {
+		try {
+			await this.db.transaction(async (tx) => {
+				const tag =
+					await tx`SELECT id FROM tags WHERE id = ${tagId} AND "userId" = ${userId}`;
+				if (tag.length === 0) {
+					throw new Error(
+						"Tag not found or user does not have permission to delete it.",
+					);
+				}
+				await tx`DELETE FROM receipt_tags WHERE "tagId" = ${tagId}`;
+				await tx`DELETE FROM tags WHERE id = ${tagId}`;
+			});
+		} catch (error) {
+			console.error(
+				`Error deleting tag with ID ${tagId} for user ${userId}:`,
+				error,
+			);
+			throw error;
+		}
+	}
 }
 
 // New ReceiptTagModel for managing the relationship between receipts and tags
