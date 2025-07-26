@@ -1,7 +1,6 @@
 // --- Database Migrations ---
 
 import type { SQL } from "bun";
-import { getDbClient } from "./client";
 
 // Define SQL statements for database schema creation and updates.
 // Each string in this array represents a single migration step.
@@ -74,7 +73,7 @@ const migrations = [
 const MIGRATION_ADVISORY_LOCK_KEY = 13371337;
 
 // Function to apply database migrations safely
-let runMigrations = async (client: SQL) => {
+export let runMigrations = async (client: SQL) => {
 	runMigrations = async () => {};
 	using sql = await client.reserve();
 	// console.log("Attempting to acquire migration lock...");
@@ -116,5 +115,3 @@ let runMigrations = async (client: SQL) => {
 		// console.log("Migration lock released.");
 	}
 };
-
-runMigrations(await getDbClient());

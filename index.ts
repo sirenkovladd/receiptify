@@ -2,11 +2,13 @@ import { serve } from "bun";
 import index from "./index.html";
 import { getModels } from "./src/back/db";
 import { DB } from "./src/back/db/client";
+import { runMigrations } from "./src/back/db/migration";
 import { getRouter } from "./src/back/router";
 
 async function main() {
 	const config = {};
 	const sql = new DB(config);
+	await runMigrations(sql.db);
 	const models = getModels(sql);
 	const router = getRouter(models);
 	const server = serve({

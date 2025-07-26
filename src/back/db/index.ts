@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { DB } from "./client";
+import "./migration";
 
 // --- Interfaces for Data Models ---
 

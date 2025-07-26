@@ -1,5 +1,5 @@
+import { SQL, type TransactionSQL } from "bun";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { SQL } from "bun";
 
 export class DB {
 	db: SQL;
@@ -14,9 +14,9 @@ export class DB {
 		return currentClient || this.db;
 	}
 
-	transaction<T>(callback: () => Promise<T>): Promise<T> {
+	transaction<T>(callback: (tx: TransactionSQL) => Promise<T>): Promise<T> {
 		return this.db.begin(async (tx) => {
-			return this.storage.run(tx, callback);
+			return this.storage.run(tx, () => callback(tx));
 		});
 	}
 }
