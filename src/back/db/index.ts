@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { DB } from "./client";
+import type { DB } from "./client";
 
 // --- Interfaces for Data Models ---
 
@@ -190,7 +190,7 @@ export class ReceiptModel extends Model {
 	): Promise<void> {
 		try {
 			const client = this.db.sql();
-			const columns = Object.keys(data) as (keyof typeof data)[] ;
+			const columns = Object.keys(data) as (keyof typeof data)[];
 
 			if (columns.length === 0) {
 				return; // Nothing to update
@@ -542,10 +542,7 @@ export function getModels(db: DB) {
 				);
 			});
 		} catch (error) {
-			console.error(
-				"Failed to process receipt transaction:",
-				error,
-			);
+			console.error("Failed to process receipt transaction:", error);
 			// The transaction would have been rolled back automatically
 			throw new Error("Failed to save receipt data.");
 		}

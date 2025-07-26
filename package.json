@@ -6,7 +6,9 @@
 	"scripts": {
 		"start": "bun index.ts",
 		"dev": "bun --watch index.ts",
-		"test": "bun test"
+		"test": "bun test",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write --unsafe ."
 	},
 	"devDependencies": {
 		"@types/bun": "latest"

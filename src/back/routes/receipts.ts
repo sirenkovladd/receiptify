@@ -69,11 +69,13 @@ export class ReceiptRoutes {
 								headers: { "Content-Type": "application/json" },
 							},
 						);
-					} catch (error: any) {
+					} catch (error) {
 						console.error("Error analyzing receipt:", error);
 						return new Response(
 							JSON.stringify({
-								message: error.message || "Failed to analyze receipt.",
+								message:
+									(error instanceof Error && error.message) ||
+									"Failed to analyze receipt.",
 							}),
 							{ status: 500, headers: { "Content-Type": "application/json" } },
 						);
@@ -114,7 +116,9 @@ export class ReceiptRoutes {
 					} catch (err) {
 						console.error("Error handling new receipt upload:", err);
 						return new Response(
-							JSON.stringify({ message: "Failed to handle new receipt upload." }),
+							JSON.stringify({
+								message: "Failed to handle new receipt upload.",
+							}),
 							{ status: 500 },
 						);
 					}
@@ -177,7 +181,11 @@ export class ReceiptRoutes {
 						}
 
 						const { items, ...receiptData } = data;
-						await receiptModel.updateReceiptById(receiptId, user.id, receiptData);
+						await receiptModel.updateReceiptById(
+							receiptId,
+							user.id,
+							receiptData,
+						);
 
 						if (items && Array.isArray(items)) {
 							// @ts-ignore

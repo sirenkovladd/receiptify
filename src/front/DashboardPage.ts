@@ -5,7 +5,7 @@ import {
 	jumpPath,
 	selectedReceipt,
 	storeNamesList,
-	tagsList
+	tagsList,
 } from "./utils"; // import shared value
 
 const {
@@ -187,37 +187,40 @@ const TransactionTaab = ({
 								"display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border: 1px solid #ccc; padding: 6px 8px; border-radius: 4px; min-height: 48px; background-color: white; position: relative;",
 						},
 						// Display selected tags as chips
-						() => div(filterTags.val.map((tagName) =>
+						() =>
 							div(
-								{ class: "md3-chip md3-chip-filled" },
-								span(tagName),
-								button(
-									{
-										class: "md3-icon-button",
-										style:
-											"margin-left:8px; padding: 0; width: auto; height: 20px; line-height: 1;color: #FFF;",
-										onclick: () => {
-											filterTags.val = filterTags.val.filter(
-												(t) => t !== tagName,
-											);
-										},
-									},
-									"✕",
+								filterTags.val.map((tagName) =>
+									div(
+										{ class: "md3-chip md3-chip-filled" },
+										span(tagName),
+										button(
+											{
+												class: "md3-icon-button",
+												style:
+													"margin-left:8px; padding: 0; width: auto; height: 20px; line-height: 1;color: #FFF;",
+												onclick: () => {
+													filterTags.val = filterTags.val.filter(
+														(t) => t !== tagName,
+													);
+												},
+											},
+											"✕",
+										),
+									),
 								),
 							),
-						)),
 						// The main input field for typing new tags
 						input({
 							class: "md3-text-field",
 							type: "text",
-							placeholder:
-								() => (filterTags.val.length === 0) ? "Filter by tags..." : "", // Placeholder only if no tags
+							placeholder: () =>
+								filterTags.val.length === 0 ? "Filter by tags..." : "", // Placeholder only if no tags
 							value: inputValue, // Bind to local state
 							list: "tags-typeahead-datalist",
 							style:
 								"flex-grow: 1; border: none; outline: none; background: transparent; padding: 0; width: auto;",
 							oninput: (e) => {
-								console.log('input', e, e.target.value)
+								console.log("input", e, e.target.value);
 								inputValue.val = e.target.value; // Update local state on input
 							},
 							onkeydown: (e) => {
@@ -231,7 +234,7 @@ const TransactionTaab = ({
 								}
 							},
 							onchange: (e) => {
-							console.log('change', e, inputValue.val)
+								console.log("change", e, inputValue.val);
 								// Handles selection from datalist (click or tab)
 								const val = inputValue.val.trim(); // Use current inputValue
 								const match = tagsList.val.find(
@@ -243,17 +246,18 @@ const TransactionTaab = ({
 									}
 									setTimeout(() => {
 										inputValue.val = ""; // Clear input after adding
-									})
+									});
 								}
 							},
 						}),
 						// Datalist for type-ahead suggestions
-						() => datalist(
-							{ id: "tags-typeahead-datalist" },
+						() =>
+							datalist(
+								{ id: "tags-typeahead-datalist" },
 								tagsList.val
 									.filter((tag) => !filterTags.val.includes(tag.name)) // Only show tags not already selected
 									.map((tag) => option({ value: tag.name })),
-						),
+							),
 					),
 				),
 				inputValue,
@@ -369,7 +373,9 @@ const DashboardPage = () => {
 	const loading = van.state(true);
 	const error = van.state<string | null>(null);
 	const searchTerm = van.state("");
-	const sortBy = van.state("datetime"); // 'datetime', 'totalAmount', 'storeName'
+	const sortBy = van.state<"datetime" | "totalAmount" | "storeName">(
+		"datetime",
+	); // 'datetime', 'totalAmount', 'storeName'
 	const sortOrder = van.state("desc"); // 'asc', 'desc'
 	const activeTab = van.state("transactions"); // 'transactions', 'products', 'analytics'
 	const filterTags = van.state<string[]>([]);
@@ -393,8 +399,9 @@ const DashboardPage = () => {
 				throw new Error("Failed to fetch receipts");
 			}
 			receipts.val = await response.json();
-		} catch (err: any) {
-			error.val = err.message || "An unknown error occurred.";
+		} catch (err) {
+			error.val =
+				(err instanceof Error && err.message) || "An unknown error occurred.";
 		} finally {
 			loading.val = false;
 		}
@@ -404,7 +411,7 @@ const DashboardPage = () => {
 
 	const filteredAndSortedReceipts = van.derive(() => {
 		const term = searchTerm.val.toLowerCase();
-		let filtered = receipts.val.filter(
+		const filtered = receipts.val.filter(
 			(r) =>
 				(r.storeName?.toLowerCase().includes(term) ||
 					r.totalAmount.toString().includes(term)) &&
@@ -426,8 +433,15 @@ const DashboardPage = () => {
 		);
 
 		return filtered.sort((a, b) => {
-			const aVal = a[sortBy.val as keyof Receipt];
-			const bVal = b[sortBy.val as keyof Receipt];
+			const sortByVal = sortBy.val;
+			const aVal =
+				sortByVal === "totalAmount"
+					? parseFloat(a[sortByVal])
+					: String(a[sortByVal]);
+			const bVal =
+				sortByVal === "totalAmount"
+					? parseFloat(b[sortByVal])
+					: String(b[sortByVal]);
 
 			let comparison = 0;
 			if (aVal > bVal) {
@@ -551,8 +565,8 @@ const DashboardPage = () => {
 						filterTags,
 						clearFilters,
 					})
-					// TODO - implement Products and Analytics tabs
-				: "",
+				: // TODO - implement Products and Analytics tabs
+					"",
 	);
 };
 

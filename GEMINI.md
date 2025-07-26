@@ -13,6 +13,13 @@ Receiptify is a web application for managing receipts. Users can upload receipt 
 
 - If you know about some improvements or not fully implemented something comment with TODO
 
+## Code Quality
+
+The project uses [Biome](https://biomejs.dev/) for code formatting and linting. To ensure code quality and consistency, please run the following commands regularly:
+
+*   **`bun run lint`**: Checks for linting errors and formatting issues.
+*   **`bun run lint:fix`**: Automatically fixes linting errors and formatting issues.
+
 ## Backend
 
 The backend is built with Bun and serves a JSON API.

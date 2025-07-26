@@ -1,5 +1,5 @@
-import type { RouterTypes } from "bun";
 import { randomBytes } from "node:crypto";
+import type { RouterTypes } from "bun";
 import { encrypt } from "../crypto";
 import type { Models, User } from "../db";
 
@@ -28,7 +28,7 @@ export class AuthRoutes {
 						const user = await userModel.getUserByEmailWithPassword(email);
 						if (user) {
 							if (await Bun.password.verify(password, user.password)) {
-								const timestamp = new Date().getTime() / 1000 + 60 * 60 * 24;
+								const timestamp = Date.now() / 1000 + 60 * 60 * 24;
 								const token = await encrypt(
 									`${user.id};${randomBytes(32).toString("base64url")};${timestamp}`,
 								);

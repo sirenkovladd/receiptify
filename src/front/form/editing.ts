@@ -62,7 +62,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 								onclick: () => {
 									items.val = items.val.filter((i) => i !== item);
 								},
-								title: "Remove item"
+								title: "Remove item",
 							},
 							"🗑️",
 						),
@@ -156,7 +156,9 @@ const TagInput = (selectedTags: State<Tag[]>) => {
 				type: "text",
 				placeholder: "Add a tag",
 				value: newTagName,
-				oninput: (e) => (newTagName.val = e.target.value),
+				oninput: (e) => {
+					newTagName.val = e.target.value;
+				},
 				list: "tags-datalist",
 			}),
 			datalist(
@@ -179,10 +181,10 @@ export const EditForm = (
 	data: Partial<ReceiptUpload>,
 	onSave: (data: ReceiptUpload) => void,
 ) => {
-	const fileInput = input({ 
+	const fileInput = input({
 		class: "md3-text-field",
-		type: "file", 
-		accept: "image/*" 
+		type: "file",
+		accept: "image/*",
 	});
 	const statusMessage = van.state("");
 	const storeName = van.state(data.storeName || "");
@@ -245,8 +247,8 @@ export const EditForm = (
 				);
 			imageUrl.val = receipt.imageUrl || null;
 			statusMessage.val = "Analysis complete. Please review and save.";
-		} catch (error: any) {
-			statusMessage.val = `Error: ${error.message || "Analysis failed."}`;
+		} catch (error) {
+			statusMessage.val = `Error: ${(error instanceof Error && error.message) || "Analysis failed."}`;
 		}
 	};
 
@@ -282,9 +284,9 @@ export const EditForm = (
 			};
 
 			await onSave(receiptData);
-		} catch (err: any) {
+		} catch (err) {
 			console.error("Error saving receipt:", err);
-			statusMessage.val = `Error: ${err.message}`;
+			statusMessage.val = `Error: ${err instanceof Error ? err.message : err}`;
 		}
 	};
 
@@ -325,10 +327,7 @@ export const EditForm = (
 			form(
 				{ onsubmit: handleUpload },
 				fileInput,
-				button(
-					{ class: "md3-button" },
-					"Upload and Analyze"
-				)
+				button({ class: "md3-button" }, "Upload and Analyze"),
 			),
 			() => (statusMessage.val ? p({ class: "error" }, statusMessage.val) : ""),
 		),
@@ -392,11 +391,11 @@ export const EditForm = (
 				type.val === "grocery" ? GroceryItems(items) : OtherReceiptDetails(),
 			TagInput(tags),
 			button(
-				{ 
+				{
 					class: "md3-button",
-					onclick: handleSave 
-				}, 
-				"Save Receipt"
+					onclick: handleSave,
+				},
+				"Save Receipt",
 			),
 		),
 	);

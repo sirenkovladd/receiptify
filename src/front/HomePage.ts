@@ -1,4 +1,5 @@
 import van from "vanjs-core";
+
 const { div, h1, p, button } = van.tags;
 
 const HomePage = () =>
@@ -6,7 +7,7 @@ const HomePage = () =>
 		{ class: "md3-container" },
 		div(
 			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Welcome to Receiptify!")
+			h1({ class: "md3-top-app-bar-title" }, "Welcome to Receiptify!"),
 		),
 		div(
 			{ class: "md3-card md3-card-elevated" },
@@ -18,21 +19,21 @@ const HomePage = () =>
 						class: "md3-button",
 						onclick: () => {
 							window.location.hash = "#/login";
-						}
+						},
 					},
-					"Login"
+					"Login",
 				),
 				button(
 					{
 						class: "md3-button md3-button-text",
 						onclick: () => {
 							window.location.hash = "#/dashboard";
-						}
+						},
 					},
-					"View Dashboard"
-				)
-			)
-		)
+					"View Dashboard",
+				),
+			),
+		),
 	);
 
 export default HomePage;

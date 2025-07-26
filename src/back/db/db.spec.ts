@@ -2,13 +2,10 @@
 // As the database schema and queries evolve, these tests must be updated.
 // Additionally, remember to update QWEN.md with any changes to the database logic or schema.
 
-import type { SQL } from "bun";
 import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import type { SQL } from "bun";
 import { DB } from "./client";
-import {
-	getModels,
-	type ReceiptUpload
-} from "./index";
+import { getModels, type ReceiptUpload } from "./index";
 
 describe("Database Functions", () => {
 	const sql = mock<() => Promise<unknown[]>>(async () => []);
@@ -41,10 +38,13 @@ describe("Database Functions", () => {
 
 			// Verify database calls were made
 			expect(sql).toHaveBeenCalledTimes(2);
-			
+
 			// Verify the token is properly hashed
-			const hashedToken = ((sql.mock.calls[1] as string[])[2]) || '';
-			const isMatch = await Bun.password.verify(Buffer.from(token, 'base64url'), hashedToken);
+			const hashedToken = (sql.mock.calls[1] as string[])[2] || "";
+			const isMatch = await Bun.password.verify(
+				Buffer.from(token, "base64url"),
+				hashedToken,
+			);
 			expect(isMatch).toBe(true);
 		});
 	});
@@ -52,16 +52,16 @@ describe("Database Functions", () => {
 	describe("handleNewReceiptUpload", () => {
 		it("should correctly upload a new receipt with items and tags in a transaction", async () => {
 			// Mock all the database calls that will happen during the upload
-			spyOn(receiptModel, 'createReceipt').mockResolvedValueOnce(1);
-			spyOn(productModel, 'findOrCreateProduct').mockResolvedValueOnce(10);
-			spyOn(receiptItemModel, 'createReceiptItem').mockResolvedValueOnce(1);
-			spyOn(productModel, 'updateProductLastPrice').mockResolvedValueOnce();
-			spyOn(productModel, 'findOrCreateProduct').mockResolvedValueOnce(11);
-			spyOn(receiptItemModel, 'createReceiptItem').mockResolvedValueOnce(2);
-			spyOn(productModel, 'updateProductLastPrice').mockResolvedValueOnce();
-			spyOn(tagModel, 'findOrCreate').mockResolvedValueOnce(1);
-			spyOn(tagModel, 'findOrCreate').mockResolvedValueOnce(2);
-			spyOn(receiptTagModel, 'addTagsToReceipt').mockResolvedValueOnce();
+			spyOn(receiptModel, "createReceipt").mockResolvedValueOnce(1);
+			spyOn(productModel, "findOrCreateProduct").mockResolvedValueOnce(10);
+			spyOn(receiptItemModel, "createReceiptItem").mockResolvedValueOnce(1);
+			spyOn(productModel, "updateProductLastPrice").mockResolvedValueOnce();
+			spyOn(productModel, "findOrCreateProduct").mockResolvedValueOnce(11);
+			spyOn(receiptItemModel, "createReceiptItem").mockResolvedValueOnce(2);
+			spyOn(productModel, "updateProductLastPrice").mockResolvedValueOnce();
+			spyOn(tagModel, "findOrCreate").mockResolvedValueOnce(1);
+			spyOn(tagModel, "findOrCreate").mockResolvedValueOnce(2);
+			spyOn(receiptTagModel, "addTagsToReceipt").mockResolvedValueOnce();
 
 			const receiptData: ReceiptUpload = {
 				type: "grocery",
@@ -104,18 +104,20 @@ describe("Database Functions", () => {
 		it("should create and retrieve a receipt", async () => {
 			// Mock database responses
 			sql.mockResolvedValueOnce([{ id: 1 }]); // createReceipt
-			sql.mockResolvedValueOnce([{ 
-				id: 1,
-				userId: 1,
-				type: "grocery",
-				storeName: "Test Store",
-				datetime: new Date(),
-				imageUrl: null,
-				totalAmount: 100,
-				description: "Test receipt",
-				createdAt: new Date(),
-				updatedAt: new Date()
-			}]); // getReceiptById
+			sql.mockResolvedValueOnce([
+				{
+					id: 1,
+					userId: 1,
+					type: "grocery",
+					storeName: "Test Store",
+					datetime: new Date(),
+					imageUrl: null,
+					totalAmount: 100,
+					description: "Test receipt",
+					createdAt: new Date(),
+					updatedAt: new Date(),
+				},
+			]); // getReceiptById
 
 			const receiptId = await receiptModel.createReceipt({
 				userId: 1,
@@ -124,7 +126,7 @@ describe("Database Functions", () => {
 				datetime: new Date(),
 				imageUrl: null,
 				totalAmount: 100,
-				description: "Test receipt"
+				description: "Test receipt",
 			});
 
 			expect(receiptId).toBe(1);
@@ -141,7 +143,7 @@ describe("Database Functions", () => {
 
 			await receiptModel.updateReceiptById(1, 1, {
 				storeName: "Updated Store",
-				totalAmount: 150
+				totalAmount: 150,
 			});
 
 			expect(sql).toHaveBeenCalled();
@@ -155,7 +157,7 @@ describe("Database Functions", () => {
 
 			const productId = await productModel.findOrCreateProduct({
 				name: "Test Product",
-				category: "Test Category"
+				category: "Test Category",
 			});
 
 			expect(productId).toBe(5);

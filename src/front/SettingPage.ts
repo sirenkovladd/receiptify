@@ -16,8 +16,8 @@ const refreshToken = async () => {
 		token.val = data.token;
 		tokenFetched.val = true; // token can be revealed after refresh
 		tokenRevealed.val = false; // still hidden until eye is pressed
-	} catch (err: any) {
-		error.val = err.message || "Unknown error";
+	} catch (err) {
+		error.val = (err instanceof Error && err.message) || "Unknown error";
 	}
 };
 
@@ -34,20 +34,25 @@ const SettingPage = () => {
 		{ class: "md3-container" },
 		div(
 			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Settings")
+			h1({ class: "md3-top-app-bar-title" }, "Settings"),
 		),
 		div(
 			{ class: "md3-card md3-card-elevated" },
 			h3("API Credential Token"),
 			p("Your API credential token:"),
 			div(
-				{ style: "display: flex; align-items: center; gap: 8px; margin: 16px 0;" },
+				{
+					style:
+						"display: flex; align-items: center; gap: 8px; margin: 16px 0;",
+				},
 				span(
-					{ 
-						style: "font-family: monospace; padding: 12px; background: var(--md-sys-color-surface-variant); border-radius: var(--md-sys-shape-corner-small); flex-grow: 1;",
-						class: "md3-text-field"
-					}, 
-					() => tokenFetched.val ? (tokenRevealed.val ? token.val : "***") : "***"
+					{
+						style:
+							"font-family: monospace; padding: 12px; background: var(--md-sys-color-surface-variant); border-radius: var(--md-sys-shape-corner-small); flex-grow: 1;",
+						class: "md3-text-field",
+					},
+					() =>
+						tokenFetched.val ? (tokenRevealed.val ? token.val : "***") : "***",
 				),
 				() =>
 					tokenFetched.val
@@ -57,7 +62,7 @@ const SettingPage = () => {
 									onclick: toggleReveal,
 									title: tokenRevealed.val ? "Hide token" : "Reveal token",
 								},
-								tokenRevealed.val ? "🙈" : "👁️"
+								tokenRevealed.val ? "🙈" : "👁️",
 							)
 						: "",
 				button(
@@ -65,21 +70,21 @@ const SettingPage = () => {
 						class: "md3-icon-button",
 						onclick: copyToken,
 						disabled: () => !tokenFetched.val,
-						title: "Copy token"
+						title: "Copy token",
 					},
-					"📋"
+					"📋",
 				),
 				button(
-					{ 
+					{
 						class: "md3-icon-button",
 						onclick: refreshToken,
-						title: "Refresh token"
+						title: "Refresh token",
 					},
-					"🔄"
+					"🔄",
 				),
 			),
-			() => error.val ? p({ class: "error" }, error.val) : ""
-		)
+			() => (error.val ? p({ class: "error" }, error.val) : ""),
+		),
 	);
 };
 

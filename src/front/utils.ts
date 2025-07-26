@@ -7,7 +7,7 @@ const getStoredUser = () => {
 	try {
 		const user = localStorage.getItem("authUser");
 		return user ? JSON.parse(user) : null;
-	} catch (e) {
+	} catch {
 		return null;
 	}
 };
@@ -42,7 +42,8 @@ export const NavLink = (
 				opt.onclick?.();
 				jumpPath(opt.path);
 			},
-			class: () => (page.val === opt.path ? `${opt.class || ""} active` : opt.class || ""),
+			class: () =>
+				page.val === opt.path ? `${opt.class || ""} active` : opt.class || "",
 		},
 		...rest,
 	);
@@ -63,7 +64,7 @@ export let fetchStoreNames = async () => {
 	}
 };
 
-export const tagsList = van.state<Tag[]>([{ name: 'qwe'}, { name: 'asd' }, { name: 'zxc' }]);
+export const tagsList = van.state<Tag[]>([]);
 
 export let fetchTags = async () => {
 	const prev = fetchTags;

@@ -1,5 +1,6 @@
 import van from "vanjs-core";
 import { authUser, jumpPath } from "./utils";
+
 const { div, h1, form, label, input, button, p } = van.tags;
 
 const LoginPage = () => {
@@ -22,8 +23,8 @@ const LoginPage = () => {
 			}
 			authUser.val = await response.json();
 			jumpPath("/dashboard");
-		} catch (err: any) {
-			error.val = err.message || "An error occurred.";
+		} catch (err) {
+			error.val = (err instanceof Error && err.message) || "An error occurred.";
 		}
 	};
 
@@ -31,10 +32,13 @@ const LoginPage = () => {
 		{ class: "md3-container" },
 		div(
 			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Login")
+			h1({ class: "md3-top-app-bar-title" }, "Login"),
 		),
 		div(
-			{ class: "md3-card md3-card-elevated", style: "max-width: 400px; margin: 24px auto; padding: 24px;" },
+			{
+				class: "md3-card md3-card-elevated",
+				style: "max-width: 400px; margin: 24px auto; padding: 24px;",
+			},
 			form(
 				{ onsubmit: handleLogin },
 				() => (error.val ? p({ class: "error" }, error.val) : ""),
@@ -60,7 +64,7 @@ const LoginPage = () => {
 				),
 				button({ class: "md3-button", type: "submit" }, "Login"),
 			),
-		)
+		),
 	);
 };
 

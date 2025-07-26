@@ -25,12 +25,9 @@ const AddPage = () => {
 		{ class: "md3-container" },
 		div(
 			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Add New Receipt")
+			h1({ class: "md3-top-app-bar-title" }, "Add New Receipt"),
 		),
-		div(
-			{ class: "md3-card md3-card-elevated" },
-			EditForm({}, handleSave)
-		)
+		div({ class: "md3-card md3-card-elevated" }, EditForm({}, handleSave)),
 	);
 };
 

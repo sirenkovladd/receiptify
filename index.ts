@@ -24,7 +24,7 @@ async function main() {
 	});
 
 	console.log(`Listening on http://localhost:${server.port}`);
-}	
+}
 
 main().catch((error) => {
 	console.error("Failed to start server:", error);

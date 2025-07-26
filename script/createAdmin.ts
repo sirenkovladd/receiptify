@@ -12,8 +12,4 @@ if (!username || !email || !password) {
 	process.exit(1);
 }
 
-models.userModel.createUser(
-	username,
-	email,
-	await Bun.password.hash(password),
-);
+models.userModel.createUser(username, email, await Bun.password.hash(password));

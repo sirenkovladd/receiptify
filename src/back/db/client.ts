@@ -1,5 +1,5 @@
-import { SQL } from "bun";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { SQL } from "bun";
 
 export class DB {
 	db: SQL;

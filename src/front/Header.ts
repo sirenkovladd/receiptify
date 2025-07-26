@@ -5,7 +5,7 @@ const { nav, a } = van.tags;
 
 const Header = () => {
 	return nav(
-		NavLink({ path: "/" }, "Home"),
+		() => (authUser.val ? "" : NavLink({ path: "/" }, "Home")),
 		() => (authUser.val ? "" : NavLink({ path: "/login" }, "Login")),
 		() => (authUser.val ? NavLink({ path: "/dashboard" }, "Dashboard") : ""),
 		() => (authUser.val ? NavLink({ path: "/add" }, "Add Receipt") : ""),

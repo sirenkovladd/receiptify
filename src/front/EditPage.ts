@@ -44,17 +44,14 @@ const EditPage = () => {
 		{ class: "md3-container" },
 		div(
 			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Edit Receipt")
+			h1({ class: "md3-top-app-bar-title" }, "Edit Receipt"),
 		),
-		div(
-			{ class: "md3-card md3-card-elevated" },
-			() => {
-				if (selectedReceipt.val) {
-					return EditForm(selectedReceipt.val, handleSave);
-				}
-				return div({ class: "md3-card" }, status);
+		div({ class: "md3-card md3-card-elevated" }, () => {
+			if (selectedReceipt.val) {
+				return EditForm(selectedReceipt.val, handleSave);
 			}
-		)
+			return div({ class: "md3-card" }, status);
+		}),
 	);
 };
 

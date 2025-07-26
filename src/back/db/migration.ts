@@ -6,7 +6,7 @@ import { getDbClient } from "./client";
 // Define SQL statements for database schema creation and updates.
 // Each string in this array represents a single migration step.
 const migrations = [
-  `CREATE TABLE IF NOT EXISTS users (
+	`CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE, -- Email should be unique for user accounts
@@ -15,7 +15,7 @@ const migrations = [
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
-  `CREATE TABLE IF NOT EXISTS receipts (
+	`CREATE TABLE IF NOT EXISTS receipts (
     id SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Link to the user who uploaded the receipt
     type VARCHAR(50) NOT NULL, -- e.g., 'grocery', 'restaurant', 'gas', 'retail'
@@ -27,7 +27,7 @@ const migrations = [
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
-  `CREATE TABLE IF NOT EXISTS products (
+	`CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE, -- Product name, unique to avoid duplicates
     category VARCHAR(50), -- e.g., 'Dairy', 'Bakery', 'Electronics'
@@ -35,7 +35,7 @@ const migrations = [
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
-  `CREATE TABLE IF NOT EXISTS receipt_items (
+	`CREATE TABLE IF NOT EXISTS receipt_items (
     id SERIAL PRIMARY KEY,
     "receiptId" INTEGER NOT NULL REFERENCES receipts(id) ON DELETE CASCADE, -- Link to the receipt
     "productId" INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT, -- Link to the product, RESTRICT to prevent deleting product if it's on a receipt
@@ -46,7 +46,7 @@ const migrations = [
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE ("receiptId", "productId") -- A product can appear only once per receipt
   )`,
-  `CREATE TABLE IF NOT EXISTS tags (
+	`CREATE TABLE IF NOT EXISTS tags (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Tags are user-specific
@@ -55,12 +55,12 @@ const migrations = [
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE("userId", name) -- Tag names should be unique per user
   )`,
-  `CREATE TABLE IF NOT EXISTS receipt_tags (
+	`CREATE TABLE IF NOT EXISTS receipt_tags (
     "receiptId" INTEGER NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
     "tagId" INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY ("receiptId", "tagId") -- Composite primary key ensures a tag is applied only once per receipt
   )`,
-  `CREATE TABLE IF NOT EXISTS user_tokens (
+	`CREATE TABLE IF NOT EXISTS user_tokens (
     id SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     "hashedToken" VARCHAR(255) NOT NULL, -- Hashed token for security
@@ -75,46 +75,46 @@ const MIGRATION_ADVISORY_LOCK_KEY = 13371337;
 
 // Function to apply database migrations safely
 let runMigrations = async (client: SQL) => {
-  runMigrations = async () => {};
-  using sql = await client.reserve();
-  // console.log("Attempting to acquire migration lock...");
-  // Acquire a session-level advisory lock. This will wait until the lock is available.
-  await sql`SELECT pg_advisory_lock(${MIGRATION_ADVISORY_LOCK_KEY})`;
-  // console.log("Migration lock acquired.");
+	runMigrations = async () => {};
+	using sql = await client.reserve();
+	// console.log("Attempting to acquire migration lock...");
+	// Acquire a session-level advisory lock. This will wait until the lock is available.
+	await sql`SELECT pg_advisory_lock(${MIGRATION_ADVISORY_LOCK_KEY})`;
+	// console.log("Migration lock acquired.");
 
-  try {
-    // Ensure the migrations tracking table exists
-    await sql`CREATE TABLE IF NOT EXISTS migrations (
+	try {
+		// Ensure the migrations tracking table exists
+		await sql`CREATE TABLE IF NOT EXISTS migrations (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL,
       "appliedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
 
-    // Get the ID of the last applied migration from the tracking table
-    const lastAppliedMigrationResult =
-      await sql`SELECT id FROM migrations ORDER BY id DESC LIMIT 1`;
-    const lastAppliedId =
-      lastAppliedMigrationResult.length > 0
-        ? (lastAppliedMigrationResult[0] as { id: number }).id
-        : -1;
+		// Get the ID of the last applied migration from the tracking table
+		const lastAppliedMigrationResult =
+			await sql`SELECT id FROM migrations ORDER BY id DESC LIMIT 1`;
+		const lastAppliedId =
+			lastAppliedMigrationResult.length > 0
+				? (lastAppliedMigrationResult[0] as { id: number }).id
+				: -1;
 
-    // Iterate through and apply new migrations
-    for (let i = lastAppliedId + 1; i < migrations.length; i++) {
-      console.log(`Applying migration ${i}...`);
-      // Execute the SQL statement for the current migration
-      await sql.unsafe(migrations[i] || "select 1");
-      // Record the applied migration in the tracking table
-      await sql`INSERT INTO migrations (id, name) VALUES (${i}, ${`migration_${i}`})`;
-      console.log(`Successfully applied migration ${i}`);
-    }
-  } catch (error) {
-    console.error("A migration failed to apply:", error);
-    throw error; // Stop the application if a migration fails
-  } finally {
-    // Always release the lock, whether migrations succeeded or failed.
-    // await sql`SELECT pg_advisory_unlock(${MIGRATION_ADVISORY_LOCK_KEY})`;
-    // console.log("Migration lock released.");
-  }
+		// Iterate through and apply new migrations
+		for (let i = lastAppliedId + 1; i < migrations.length; i++) {
+			console.log(`Applying migration ${i}...`);
+			// Execute the SQL statement for the current migration
+			await sql.unsafe(migrations[i] || "select 1");
+			// Record the applied migration in the tracking table
+			await sql`INSERT INTO migrations (id, name) VALUES (${i}, ${`migration_${i}`})`;
+			console.log(`Successfully applied migration ${i}`);
+		}
+	} catch (error) {
+		console.error("A migration failed to apply:", error);
+		throw error; // Stop the application if a migration fails
+	} finally {
+		// Always release the lock, whether migrations succeeded or failed.
+		// await sql`SELECT pg_advisory_unlock(${MIGRATION_ADVISORY_LOCK_KEY})`;
+		// console.log("Migration lock released.");
+	}
 };
 
 runMigrations(await getDbClient());
