@@ -1,7 +1,15 @@
 import type { RouterTypes } from "bun";
 import { decrypt } from "./crypto";
 import type { Models, User } from "./db";
-import { AuthRoutes, ReceiptRoutes, StoreRoutes, TagRoutes } from "./routes";
+import {
+	AuthRoutes,
+	CardRouter,
+	FolderRouter,
+	ProductRoutes,
+	ReceiptRoutes,
+	StoreRoutes,
+	TagRoutes,
+} from "./routes";
 
 const tokens: Record<string, [User, number]> = {};
 
@@ -34,12 +42,18 @@ export function getRouter(models: Models) {
 	const receiptRoutes = new ReceiptRoutes(models, getUserFromToken);
 	const storeRoutes = new StoreRoutes(models, getUserFromToken);
 	const tagRoutes = new TagRoutes(models, getUserFromToken);
+	const cardRouter = new CardRouter(models, getUserFromToken);
+	const folderRouter = new FolderRouter(models, getUserFromToken);
+	const productRoutes = new ProductRoutes(models, getUserFromToken);
 
 	const router: Record<string, RouterTypes.RouteValue<string>> = {
 		...authRoutes.getRoutes(),
 		...receiptRoutes.getRoutes(),
 		...storeRoutes.getRoutes(),
 		...tagRoutes.getRoutes(),
+		...cardRouter.getRoutes(),
+		...folderRouter.getRoutes(),
+		...productRoutes.getRoutes(),
 	};
 
 	return router;

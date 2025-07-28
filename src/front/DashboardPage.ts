@@ -1,7 +1,11 @@
 import van, { type State } from "vanjs-core";
 import type { Receipt } from "./main";
 import {
+	cardsList,
+	fetchCards,
+	fetchFolders,
 	fetchStoreNames,
+	foldersList,
 	jumpPath,
 	selectedReceipt,
 	storeNamesList,
@@ -26,6 +30,21 @@ const {
 	span,
 	datalist,
 } = van.tags;
+
+interface ProductItem {
+	id: number;
+	receiptId: number;
+	productId: number;
+	quantity: number;
+	unitPrice: number;
+	lineTotal: number;
+	createdAt: string;
+	updatedAt: string;
+	productName: string;
+	productCategory: string | null;
+	storeName: string | null;
+	datetime: string;
+}
 
 const Chip = (text: string, type: string = "") => {
 	let chipClass = "md3-chip";
@@ -56,7 +75,6 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 				th({ class: "" }, "Card"),
 				th({ class: "" }, "Folder"),
 				th({ class: "" }, "Tags"),
-				th({ class: "" }, "Category"),
 			),
 		),
 		tbody(
@@ -79,16 +97,21 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 								: null, // Example for a "Receipt" chip
 						),
 					),
-					td(`$${parseFloat(receipt.totalAmount).toFixed(2)}`),
-					td(receipt.card || "N/A"),
-					td(Chip(receipt.folder || "N/A", "folder")), // Folder chip
+					td(`${parseFloat(receipt.totalAmount).toFixed(2)}`),
+					td(
+						cardsList.val.find((card) => card.id === receipt.cardId)?.name ||
+							"Default",
+					),
+					td(
+						foldersList.val.find((folder) => folder.id === receipt.folderId)
+							?.name || "Default",
+					),
 					td(
 						div(
 							{ class: "flex flex-wrap gap-1" }, // Flex container for multiple tags
 							...(receipt.tags || []).map((tag) => Chip(tag.name, "tag")), // Tags as chips
 						),
 					),
-					td(Chip(receipt.category || "N/A", "category")), // Category chip
 				),
 			),
 		),
@@ -380,7 +403,13 @@ const DashboardPage = () => {
 	const activeTab = van.state("transactions"); // 'transactions', 'products', 'analytics'
 	const filterTags = van.state<string[]>([]);
 
+	const products = van.state<ProductItem[]>([]);
+	const productsLoading = van.state(true);
+	const productsError = van.state<string | null>(null);
+
 	fetchStoreNames();
+	fetchCards();
+	fetchFolders();
 
 	// Filter states
 	const filterDateFrom = van.state("");
@@ -408,6 +437,23 @@ const DashboardPage = () => {
 	};
 
 	fetchReceipts();
+
+	const fetchProducts = async () => {
+		try {
+			productsLoading.val = true;
+			productsError.val = null;
+			const response = await fetch("/api/products");
+			if (!response.ok) {
+				throw new Error("Failed to fetch products");
+			}
+			products.val = await response.json();
+		} catch (err) {
+			productsError.val =
+				(err instanceof Error && err.message) || "An unknown error occurred.";
+		} finally {
+			productsLoading.val = false;
+		}
+	};
 
 	const filteredAndSortedReceipts = van.derive(() => {
 		const term = searchTerm.val.toLowerCase();
@@ -532,6 +578,9 @@ const DashboardPage = () => {
 						`md3-tab ${activeTab.val === "products" ? "md3-tab-active" : ""}`,
 					onclick: () => {
 						activeTab.val = "products";
+						if (products.val.length === 0 && !productsError.val) {
+							fetchProducts();
+						}
 					},
 				},
 				"Products",
@@ -547,26 +596,164 @@ const DashboardPage = () => {
 				"Analytics",
 			),
 		),
-		() =>
-			activeTab.val === "transactions"
-				? TransactionTaab({
-						loading,
-						error,
-						searchTerm,
-						sortBy,
-						sortOrder,
-						filteredAndSortedReceipts,
-						filterDateFrom,
-						filterDateTo,
-						filterMinAmount,
-						filterMaxAmount,
-						filterType,
-						filterStore,
-						filterTags,
-						clearFilters,
-					})
-				: // TODO - implement Products and Analytics tabs
-					"",
+		() => {
+			if (activeTab.val === "transactions") {
+				return TransactionTaab({
+					loading,
+					error,
+					searchTerm,
+					sortBy,
+					sortOrder,
+					filteredAndSortedReceipts,
+					filterDateFrom,
+					filterDateTo,
+					filterMinAmount,
+					filterMaxAmount,
+					filterType,
+					filterStore,
+					filterTags,
+					clearFilters,
+				});
+			}
+			if (activeTab.val === "products") {
+				return ProductsTab({
+					products: products,
+					loading: productsLoading,
+					error: productsError,
+				});
+			}
+			// TODO - implement Analytics tab
+			return "";
+		},
+	);
+};
+
+const ProductsTab = ({
+	products,
+	loading,
+	error,
+}: {
+	products: State<ProductItem[]>;
+	loading: State<boolean>;
+	error: State<string | null>;
+}) => {
+	// Add states for filtering and sorting
+	const searchTerm = van.state("");
+	const sortBy = van.state("productName");
+	const sortOrder = van.state("asc");
+
+	const filteredAndSortedItems = van.derive(() => {
+		const term = searchTerm.val.toLowerCase();
+		const filtered = products.val.filter(
+			(item) =>
+				item.productName.toLowerCase().includes(term) ||
+				item.productCategory?.toLowerCase().includes(term),
+		);
+
+		return filtered.sort((a, b) => {
+			const sortByVal = sortBy.val;
+			const aVal =
+				sortByVal === "unitPrice" || sortByVal === "quantity"
+					? a[sortByVal]
+					: String(a[sortByVal] || "").toLowerCase();
+			const bVal =
+				sortByVal === "unitPrice" || sortByVal === "quantity"
+					? b[sortByVal]
+					: String(b[sortByVal] || "").toLowerCase();
+
+			let comparison = 0;
+			if (aVal > bVal) {
+				comparison = 1;
+			} else if (aVal < bVal) {
+				comparison = -1;
+			}
+			return sortOrder.val === "desc" ? -comparison : comparison;
+		});
+	});
+
+	return div(
+		{ class: "md3-card md3-card-elevated", style: "margin-top: 16px;" },
+		div(
+			{ class: "md3-card", style: "padding: 16px; display: flex; gap: 16px;" },
+			input({
+				class: "md3-text-field",
+				type: "text",
+				placeholder: "Search by product or category...",
+				value: searchTerm,
+				oninput: (e) => {
+					searchTerm.val = e.target.value;
+				},
+				style: "flex-grow: 1;",
+			}),
+			select(
+				{
+					class: "md3-select",
+					value: sortBy,
+					onchange: (e) => {
+						sortBy.val = e.target.value;
+					},
+				},
+				option({ value: "productName" }, "Sort by Name"),
+				option({ value: "productCategory" }, "Sort by Category"),
+				option({ value: "unitPrice" }, "Sort by Price"),
+				option({ value: "quantity" }, "Sort by Quantity"),
+				option({ value: "storeName" }, "Sort by Store"),
+			),
+			select(
+				{
+					class: "md3-select",
+					value: sortOrder,
+					onchange: (e) => {
+						sortOrder.val = e.target.value;
+					},
+				},
+				option({ value: "asc" }, "Ascending"),
+				option({ value: "desc" }, "Descending"),
+			),
+		),
+		() => {
+			if (loading.val)
+				return p({ style: "padding: 16px;" }, "Loading products...");
+			if (error.val)
+				return p(
+					{ class: "error", style: "padding: 16px;" },
+					`Error: ${error.val}`,
+				);
+			if (filteredAndSortedItems.val.length === 0)
+				return p({ style: "padding: 16px;" }, "No products found.");
+
+			return table(
+				{ class: "md3-data-table" },
+				thead(
+					tr(
+						th("Product Name"),
+						th("Category"),
+						th("Quantity"),
+						th("Price"),
+						th("Store"),
+						th("Date"),
+					),
+				),
+				tbody(
+					...filteredAndSortedItems.val.map((item) =>
+						tr(
+							td(item.productName),
+							td(item.productCategory || "N/A"),
+							td(item.quantity),
+							td(`${item.unitPrice.toFixed(2)}`),
+							td(item.storeName),
+							td(
+								new Date(item.datetime).toLocaleDateString("en-US", {
+									year: "numeric",
+									month: "short",
+									day: "numeric",
+								}),
+							),
+						),
+					),
+				),
+			);
+		},
 	);
 };
 

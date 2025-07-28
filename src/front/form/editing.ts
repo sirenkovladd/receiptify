@@ -1,7 +1,16 @@
 import van, { type State } from "vanjs-core";
-import type { ParsedReceipt, Tag } from "../../back/analyzer";
-import type { ReceiptUpload } from "../../back/db";
-import { fetchStoreNames, fetchTags, storeNamesList, tagsList } from "../utils";
+import type { ParsedReceipt } from "../../back/analyzer";
+import type { ReceiptUpload, Tag } from "../../back/db";
+import {
+	cardsList,
+	fetchCards,
+	fetchFolders,
+	fetchStoreNames,
+	fetchTags,
+	foldersList,
+	storeNamesList,
+	tagsList,
+} from "../utils";
 
 const {
 	div,
@@ -34,6 +43,15 @@ const GroceryItems = (items: State<ItemType[]>) => {
 								item.name.val = e.target.value;
 							},
 							placeholder: "Item Name",
+						}),
+						input({
+							class: "md3-text-field",
+							type: "text",
+							value: item.category,
+							oninput: (e) => {
+								item.category.val = e.target.value;
+							},
+							placeholder: "Category",
 						}),
 						input({
 							class: "md3-text-field",
@@ -87,6 +105,7 @@ const GroceryItems = (items: State<ItemType[]>) => {
 							name: van.state(""),
 							count: van.state(1),
 							price: van.state(0),
+							category: van.state(null),
 						},
 					];
 				},
@@ -175,6 +194,7 @@ type ItemType = {
 	name: State<string>;
 	count: State<number>;
 	price: State<number>;
+	category: State<string | null>;
 };
 
 export const EditForm = (
@@ -196,6 +216,7 @@ export const EditForm = (
 			name: van.state(item.name),
 			count: van.state(item.quantity),
 			price: van.state(item.unitPrice),
+			category: van.state(item.category || null),
 		})) || [],
 	);
 
@@ -203,9 +224,13 @@ export const EditForm = (
 	const totalAmount = van.state(data.totalAmount || 0);
 	const description = van.state(data.description || "");
 	const tags = van.state<Tag[]>(data.tags || []);
+	const cardId = van.state<number | null>(data.cardId || null);
+	const folderId = van.state<number | null>(data.folderId || null);
 
 	fetchStoreNames();
 	fetchTags();
+	fetchCards();
+	fetchFolders();
 
 	const handleUpload = async (e: Event) => {
 		e.preventDefault();
@@ -238,6 +263,7 @@ export const EditForm = (
 				count: van.state(item.count),
 				price: van.state(item.price),
 				id: van.state(null),
+				category: van.state(null),
 			}));
 			totalAmount.val =
 				receipt.totalAmount ||
@@ -274,13 +300,15 @@ export const EditForm = (
 							name: i.name.val,
 							quantity: i.count.val,
 							unitPrice: i.price.val,
-							category: null,
+							category: i.category.val,
 							id: i.id.val,
 						}))
 					: [],
 				imageUrl: imageUrl.val,
 				tags: tags.val.map((t) => t.name),
 				id: data.id,
+				cardId: cardId.val,
+				folderId: folderId.val,
 			};
 
 			await onSave(receiptData);
@@ -384,6 +412,42 @@ export const EditForm = (
 						option({ value: "gas" }, "Gas"),
 						option({ value: "retail" }, "Retail"),
 						option({ value: "other" }, "Other"),
+					),
+				),
+				div(label("Card:"), () =>
+					select(
+						{
+							class: "md3-select",
+							value: cardId,
+							onchange: (e) => {
+								const value = (e.target as HTMLSelectElement).value;
+								cardId.val = value ? Number(value) : null;
+							},
+						},
+						[
+							option({ value: "" }, "Default"),
+							...cardsList.val.map((card) =>
+								option({ value: card.id }, card.name),
+							),
+						],
+					),
+				),
+				div(label("Folder:"), () =>
+					select(
+						{
+							class: "md3-select",
+							value: folderId,
+							onchange: (e) => {
+								const value = (e.target as HTMLSelectElement).value;
+								folderId.val = value ? Number(value) : null;
+							},
+						},
+						[
+							option({ value: "" }, "Default"),
+							...foldersList.val.map((folder) =>
+								option({ value: folder.id }, folder.name),
+							),
+						],
 					),
 				),
 			),

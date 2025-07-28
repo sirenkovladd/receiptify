@@ -15,31 +15,14 @@ import EditPage from "./EditPage";
 import Header from "./Header";
 import HomePage from "./HomePage";
 import LoginPage from "./LoginPage";
+import { ManagementPage } from "./ManagementPage";
 import NotFoundPage from "./NotFoundPage";
 import SettingPage from "./SettingPage";
 import { authUser, jumpPath, page, routerParam } from "./utils";
 
 const { div } = van.tags;
 
-import type { Tag } from "../back/db";
-
-// Shared state and utilities
-export interface Receipt {
-	id: number;
-	userId: number;
-	type: string;
-	storeName: string | null;
-	datetime: string;
-	imageUrl: string | null;
-	totalAmount: string;
-	description: string | null;
-	createdAt: string;
-	updatedAt: string;
-	tags: Tag[];
-	card: string | null;
-	folder: string | null;
-	category: string | null;
-}
+export type { Receipt, Tag } from "../back/db";
 
 // Sync authUser state with localStorage
 van.derive(() => {
@@ -74,6 +57,7 @@ addRoute(router, undefined, "/dashboard", DashboardPage);
 addRoute(router, undefined, "/add", AddPage);
 addRoute(router, undefined, "/settings", SettingPage);
 addRoute(router, undefined, "/edit/:id", EditPage);
+addRoute(router, undefined, "/management", ManagementPage);
 const notFoundPath = "/404";
 addRoute(router, undefined, notFoundPath, NotFoundPage);
 

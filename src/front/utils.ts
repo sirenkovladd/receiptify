@@ -1,5 +1,5 @@
 import van, { type ChildDom } from "vanjs-core";
-import type { ReceiptUpload, Tag } from "../back/db";
+import type { Card, Folder, ReceiptUpload, Tag } from "../back/db";
 
 const { a } = van.tags;
 
@@ -77,5 +77,37 @@ export let fetchTags = async () => {
 	} catch (error) {
 		console.error("Failed to fetch tags:", error);
 		fetchTags = prev;
+	}
+};
+
+export const cardsList = van.state<Card[]>([]);
+
+export let fetchCards = async () => {
+	const prev = fetchCards;
+	fetchCards = async () => {};
+	try {
+		const response = await fetch("/api/card");
+		if (response.ok) {
+			cardsList.val = await response.json();
+		}
+	} catch (error) {
+		console.error("Failed to fetch cards:", error);
+		fetchCards = prev;
+	}
+};
+
+export const foldersList = van.state<Folder[]>([]);
+
+export let fetchFolders = async () => {
+	const prev = fetchFolders;
+	fetchFolders = async () => {};
+	try {
+		const response = await fetch("/api/folder");
+		if (response.ok) {
+			foldersList.val = await response.json();
+		}
+	} catch (error) {
+		console.error("Failed to fetch folders:", error);
+		fetchFolders = prev;
 	}
 };

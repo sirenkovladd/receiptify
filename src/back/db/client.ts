@@ -1,5 +1,5 @@
-import { SQL, type TransactionSQL } from "bun";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { SQL, type TransactionSQL } from "bun";
 
 export class DB {
 	db: SQL;

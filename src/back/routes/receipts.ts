@@ -125,7 +125,7 @@ export class ReceiptRoutes {
 				},
 			},
 			"/api/receipts/:id": {
-				GET: (async (req) => {
+				GET: async (req) => {
 					const token = req.cookies.get("authUser");
 					if (!token) {
 						return new Response("Unauthorized", { status: 401 });
@@ -159,8 +159,8 @@ export class ReceiptRoutes {
 							headers: { "Content-Type": "application/json" },
 						},
 					);
-				}) as RouterTypes.RouteHandler<"/receipts/:id">,
-				POST: (async (req) => {
+				},
+				POST: async (req) => {
 					const token = req.cookies.get("authUser");
 					if (!token) {
 						return new Response("Unauthorized", { status: 401 });
@@ -230,8 +230,8 @@ export class ReceiptRoutes {
 							{ status: 500 },
 						);
 					}
-				}) as RouterTypes.RouteHandler<"/receipts/:id">,
-			},
+				},
+			} as RouterTypes.RouteHandlerObject<"/receipts/:id">,
 		};
 	}
 }

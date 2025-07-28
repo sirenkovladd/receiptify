@@ -1,4 +1,3 @@
-
 # Gemini Code Assistant Context
 
 This document provides context for the Gemini code assistant to understand the Receiptify project.
@@ -42,20 +41,38 @@ The backend is built with Bun and serves a JSON API.
     *   `receipts.ts`: Manages receipt-related routes.
     *   `stores.ts`: Provides store-related routes.
     *   `tags.ts`: Contains tag-related routes.
+    *   `cards.ts`: Manages card-related routes.
+    *   `folders.ts`: Manages folder-related routes.
+    *   `products.ts`: Manages product-related routes.
 *   `src/back/db/index.ts`: Contains the database schema, migrations, and data models.
-
-### Tag API Endpoints
-
-*   **`GET /api/tags`**: Retrieves all tags for the authenticated user.
-*   **`POST /api/tags`**: Creates a new tag. Requires a `name` and optional `parentId` in the request body.
-*   **`DELETE /api/tags/:id`**: Deletes a specific tag by its ID.
-*   **`POST /api/receipts/:id/tags`**: Associates a tag with a receipt. Requires a `tagId` in the request body.
-*   **`DELETE /api/receipts/:receiptId/tags/:tagId`**: Removes a tag's association from a receipt.
 *   `src/back/db/migration.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/db/client.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/analyzer.ts`: Handles receipt image analysis using the Gemini API.
 *   `src/back/crypto.ts`: Provides encryption and decryption utilities for session management.
 *   `src/back/config.ts`: Manages environment variables and configuration.
+
+### API Endpoints
+
+#### Tags
+*   **`GET /api/tags`**: Retrieves all tags for the authenticated user.
+*   **`POST /api/tags`**: Creates a new tag. Requires a `name` and optional `parentId` in the request body.
+*   **`DELETE /api/tags/:id`**: Deletes a specific tag by its ID.
+*   **`POST /api/receipts/:id/tags`**: Associates a tag with a receipt. Requires a `tagId` in the request body.
+*   **`DELETE /api/receipts/:receiptId/tags/:tagId`**: Removes a tag's association from a receipt.
+
+#### Cards
+*   **`GET /api/cards`**: Retrieves all cards for the authenticated user.
+*   **`POST /api/cards`**: Creates a new card. Requires a `name` and `last4` in the request body.
+*   **`DELETE /api/cards/:id`**: Deletes a specific card by its ID.
+
+#### Folders
+*   **`GET /api/folders`**: Retrieves all folders for the authenticated user.
+*   **`POST /api/folders`**: Creates a new folder. Requires a `name` in the request body.
+*   **`DELETE /api/folders/:id`**: Deletes a specific folder by its ID.
+
+#### Products
+*   **`GET /api/products`**: Retrieves all products for the authenticated user.
+
 
 ## Frontend
 
@@ -72,7 +89,7 @@ The frontend is a single-page application (SPA) built with VanJS.
 
 *   `src/front/main.ts`: The entry point for the frontend application. It initializes the router and renders the main application component.
 *   `src/front/utils.ts`: Contains shared state and utility functions, such as `authUser`, `page`, and `jumpPath`.
-*   `src/front/*.ts`: Each file in this directory typically represents a page or a major component of the application (e.g., `HomePage.ts`, `LoginPage.ts`, `DashboardPage.ts`).
+*   `src/front/*.ts`: Each file in this directory typically represents a page or a major component of the application (e.g., `HomePage.ts`, `LoginPage.ts`, `DashboardPage.ts`, `ManagementPage.ts`).
 *   `src/front/form/editing.ts`: A component for a form to edit receipt data.
 
 ### Material Design 3 Implementation

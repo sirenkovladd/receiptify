@@ -25,6 +25,8 @@ export interface Receipt {
 	description: string | null; // User-added description for the receipt
 	createdAt: Date;
 	updatedAt: Date;
+	cardId?: number | null;
+	folderId?: number | null;
 }
 
 export interface Product {
@@ -60,6 +62,23 @@ export interface UserToken {
 	id: number;
 	userId: number; // The user this token belongs to
 	hashedToken: string; // Hashed token for security
+}
+
+export interface Card {
+	id: number;
+	userId: number;
+	name: string;
+	last4: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface Folder {
+	id: number;
+	userId: number;
+	name: string;
+	createdAt: Date;
+	updatedAt: Date;
 }
 
 class Model {
@@ -134,8 +153,8 @@ export class ReceiptModel extends Model {
 	): Promise<number> {
 		try {
 			const result = await this.db.sql()`
-                INSERT INTO receipts ("userId", type, "storeName", datetime, "imageUrl", "totalAmount", description)
-                VALUES (${receipt.userId}, ${receipt.type}, ${receipt.storeName}, ${receipt.datetime}, ${receipt.imageUrl}, ${receipt.totalAmount}, ${receipt.description})
+                INSERT INTO receipts ("userId", type, "storeName", datetime, "imageUrl", "totalAmount", description, "cardId", "folderId")
+                VALUES (${receipt.userId}, ${receipt.type}, ${receipt.storeName}, ${receipt.datetime}, ${receipt.imageUrl}, ${receipt.totalAmount}, ${receipt.description}, ${receipt.cardId}, ${receipt.folderId})
                 RETURNING id
             `;
 			return (result[0] as { id: number }).id;
@@ -324,6 +343,40 @@ export class ReceiptItemModel extends Model {
 		}
 	}
 
+	async getDetailedItemsByUserId(userId: number): Promise<
+		(ReceiptItem & {
+			productName: string;
+			productCategory: string | null;
+			storeName: string | null;
+			datetime: Date;
+		})[]
+	> {
+		try {
+			const result = await this.db.sql()`
+				SELECT
+					ri.*,
+					p.name AS "productName",
+					p.category AS "productCategory",
+					r."storeName",
+					r.datetime
+				FROM receipt_items ri
+				JOIN products p ON ri."productId" = p.id
+				JOIN receipts r ON ri."receiptId" = r.id
+				WHERE r."userId" = ${userId}
+				ORDER BY r.datetime DESC
+			`;
+			return result as (ReceiptItem & {
+				productName: string;
+				productCategory: string | null;
+				storeName: string | null;
+				datetime: Date;
+			})[];
+		} catch (error) {
+			console.error("Error getting detailed receipt items by user ID:", error);
+			throw error;
+		}
+	}
+
 	async deleteItemsByReceiptId(receiptId: number): Promise<void> {
 		try {
 			const client = this.db.sql();
@@ -485,6 +538,82 @@ export class UserTokenModel extends Model {
 	}
 }
 
+export class CardModel extends Model {
+	async getCardsByUserId(userId: number): Promise<Card[]> {
+		try {
+			const result =
+				await this.db.sql()`SELECT * FROM cards WHERE "userId" = ${userId} ORDER BY name ASC`;
+			return result as Card[];
+		} catch (error) {
+			console.error("Error getting cards by user ID:", error);
+			throw error;
+		}
+	}
+
+	async createCard(
+		userId: number,
+		name: string,
+		last4: string,
+	): Promise<number> {
+		try {
+			const result = await this.db.sql()`
+				INSERT INTO cards ("userId", name, last4)
+				VALUES (${userId}, ${name}, ${last4})
+				RETURNING id
+			`;
+			return (result[0] as { id: number }).id;
+		} catch (error) {
+			console.error("Error creating card:", error);
+			throw error;
+		}
+	}
+
+	async deleteCard(userId: number, cardId: number): Promise<void> {
+		try {
+			await this.db.sql()`DELETE FROM cards WHERE id = ${cardId} AND "userId" = ${userId}`;
+		} catch (error) {
+			console.error("Error deleting card:", error);
+			throw error;
+		}
+	}
+}
+
+export class FolderModel extends Model {
+	async getFoldersByUserId(userId: number): Promise<Folder[]> {
+		try {
+			const result =
+				await this.db.sql()`SELECT * FROM folders WHERE "userId" = ${userId} ORDER BY name ASC`;
+			return result as Folder[];
+		} catch (error) {
+			console.error("Error getting folders by user ID:", error);
+			throw error;
+		}
+	}
+
+	async createFolder(userId: number, name: string): Promise<number> {
+		try {
+			const result = await this.db.sql()`
+				INSERT INTO folders ("userId", name)
+				VALUES (${userId}, ${name})
+				RETURNING id
+			`;
+			return (result[0] as { id: number }).id;
+		} catch (error) {
+			console.error("Error creating folder:", error);
+			throw error;
+		}
+	}
+
+	async deleteFolder(userId: number, folderId: number): Promise<void> {
+		try {
+			await this.db.sql()`DELETE FROM folders WHERE id = ${folderId} AND "userId" = ${userId}`;
+		} catch (error) {
+			console.error("Error deleting folder:", error);
+			throw error;
+		}
+	}
+}
+
 export function getModels(db: DB) {
 	const userModel = new UserModel(db);
 	const receiptModel = new ReceiptModel(db);
@@ -493,6 +622,8 @@ export function getModels(db: DB) {
 	const tagModel = new TagModel(db);
 	const receiptTagModel = new ReceiptTagModel(db);
 	const userTokenModel = new UserTokenModel(db);
+	const cardModel = new CardModel(db);
+	const folderModel = new FolderModel(db);
 
 	async function handleNewReceiptUpload(
 		userId: number,
@@ -502,13 +633,9 @@ export function getModels(db: DB) {
 			await db.transaction(async () => {
 				// All operations within this block will share the same transaction
 				const newReceiptId = await receiptModel.createReceipt({
+					...receiptData,
 					userId: userId,
-					type: receiptData.type,
-					storeName: receiptData.storeName,
 					datetime: new Date(receiptData.datetime),
-					imageUrl: receiptData.imageUrl,
-					totalAmount: receiptData.totalAmount,
-					description: receiptData.description,
 				});
 				console.log(newReceiptId);
 
@@ -568,6 +695,8 @@ export function getModels(db: DB) {
 		tagModel,
 		receiptTagModel,
 		userTokenModel,
+		cardModel,
+		folderModel,
 		handleNewReceiptUpload,
 		refreshToken,
 	};

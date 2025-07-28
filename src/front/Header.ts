@@ -9,6 +9,7 @@ const Header = () => {
 		() => (authUser.val ? "" : NavLink({ path: "/login" }, "Login")),
 		() => (authUser.val ? NavLink({ path: "/dashboard" }, "Dashboard") : ""),
 		() => (authUser.val ? NavLink({ path: "/add" }, "Add Receipt") : ""),
+		() => (authUser.val ? NavLink({ path: "/management" }, "Management") : ""),
 		() => (authUser.val ? NavLink({ path: "/settings" }, "Settings") : ""),
 		() =>
 			authUser.val
