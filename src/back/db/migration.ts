@@ -22,13 +22,6 @@ const migrations = [
 		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)`,
-	`CREATE TABLE IF NOT EXISTS folders (
-		id SERIAL PRIMARY KEY,
-		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		name VARCHAR(255) NOT NULL,
-		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)`,
 	`CREATE TABLE IF NOT EXISTS receipts (
     id SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Link to the user who uploaded the receipt
@@ -39,7 +32,6 @@ const migrations = [
     "totalAmount" DECIMAL(10, 2) NOT NULL, -- Calculated total amount from all items
     description TEXT, -- User-added description for the receipt
     "cardId" INTEGER REFERENCES cards(id) ON DELETE SET NULL,
-    "folderId" INTEGER REFERENCES folders(id) ON DELETE SET NULL,
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,

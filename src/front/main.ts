@@ -15,7 +15,6 @@ import EditPage from "./EditPage";
 import Header from "./Header";
 import HomePage from "./HomePage";
 import LoginPage from "./LoginPage";
-import { ManagementPage } from "./ManagementPage";
 import NotFoundPage from "./NotFoundPage";
 import SettingPage from "./SettingPage";
 import { authUser, jumpPath, page, routerParam } from "./utils";
@@ -57,7 +56,6 @@ addRoute(router, undefined, "/dashboard", DashboardPage);
 addRoute(router, undefined, "/add", AddPage);
 addRoute(router, undefined, "/settings", SettingPage);
 addRoute(router, undefined, "/edit/:id", EditPage);
-addRoute(router, undefined, "/management", ManagementPage);
 const notFoundPath = "/404";
 addRoute(router, undefined, notFoundPath, NotFoundPage);
 

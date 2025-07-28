@@ -26,7 +26,6 @@ export interface Receipt {
 	createdAt: Date;
 	updatedAt: Date;
 	cardId?: number | null;
-	folderId?: number | null;
 }
 
 export interface Product {
@@ -70,14 +69,6 @@ export interface Card {
 	userId: number;
 	name: string;
 	last4: string;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
-export interface Folder {
-	id: number;
-	userId: number;
-	name: string;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -154,8 +145,8 @@ export class ReceiptModel extends Model {
 	): Promise<number> {
 		try {
 			const result = await this.db.sql()`
-                INSERT INTO receipts ("userId", type, "storeName", datetime, "imageUrl", "totalAmount", description, "cardId", "folderId")
-                VALUES (${receipt.userId}, ${receipt.type}, ${receipt.storeName}, ${receipt.datetime}, ${receipt.imageUrl}, ${receipt.totalAmount}, ${receipt.description}, ${receipt.cardId}, ${receipt.folderId})
+                INSERT INTO receipts ("userId", type, "storeName", datetime, "imageUrl", "totalAmount", description, "cardId")
+                VALUES (${receipt.userId}, ${receipt.type}, ${receipt.storeName}, ${receipt.datetime}, ${receipt.imageUrl}, ${receipt.totalAmount}, ${receipt.description}, ${receipt.cardId})
                 RETURNING id
             `;
 			return (result[0] as { id: number }).id;
@@ -594,42 +585,6 @@ export class CardModel extends Model {
 	}
 }
 
-export class FolderModel extends Model {
-	async getFoldersByUserId(userId: number): Promise<Folder[]> {
-		try {
-			const result =
-				await this.db.sql()`SELECT * FROM folders WHERE "userId" = ${userId} ORDER BY name ASC`;
-			return result as Folder[];
-		} catch (error) {
-			console.error("Error getting folders by user ID:", error);
-			throw error;
-		}
-	}
-
-	async createFolder(userId: number, name: string): Promise<number> {
-		try {
-			const result = await this.db.sql()`
-				INSERT INTO folders ("userId", name)
-				VALUES (${userId}, ${name})
-				RETURNING id
-			`;
-			return (result[0] as { id: number }).id;
-		} catch (error) {
-			console.error("Error creating folder:", error);
-			throw error;
-		}
-	}
-
-	async deleteFolder(userId: number, folderId: number): Promise<void> {
-		try {
-			await this.db.sql()`DELETE FROM folders WHERE id = ${folderId} AND "userId" = ${userId}`;
-		} catch (error) {
-			console.error("Error deleting folder:", error);
-			throw error;
-		}
-	}
-}
-
 export function getModels(db: DB) {
 	const userModel = new UserModel(db);
 	const receiptModel = new ReceiptModel(db);
@@ -639,7 +594,6 @@ export function getModels(db: DB) {
 	const receiptTagModel = new ReceiptTagModel(db);
 	const userTokenModel = new UserTokenModel(db);
 	const cardModel = new CardModel(db);
-	const folderModel = new FolderModel(db);
 
 	async function handleNewReceiptUpload(
 		userId: number,
@@ -712,7 +666,6 @@ export function getModels(db: DB) {
 		receiptTagModel,
 		userTokenModel,
 		cardModel,
-		folderModel,
 		handleNewReceiptUpload,
 		refreshToken,
 	};

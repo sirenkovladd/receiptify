@@ -11,6 +11,9 @@ Receiptify is a web application for managing receipts. Users can upload receipt 
 ## Development Guidelines
 
 - If you know about some improvements or not fully implemented something comment with TODO
+- **TypeScript Best Practices**:
+  - Avoid using the `any` type. Strive for strong typing to improve code clarity and maintainability.
+  - Prevent assignments within expressions to enhance code readability and reduce potential for bugs.
 
 ## Code Quality
 
@@ -38,12 +41,11 @@ The backend is built with Bun and serves a JSON API.
 *   `src/back/routes/`: This directory contains the route definitions, split by functionality.
     *   `index.ts`: Exports all route classes.
     *   `auth.ts`: Handles authentication-related routes.
+    *   `cards.ts`: Manages card-related routes.
+    *   `products.ts`: Manages product-related routes.
     *   `receipts.ts`: Manages receipt-related routes.
     *   `stores.ts`: Provides store-related routes.
     *   `tags.ts`: Contains tag-related routes.
-    *   `cards.ts`: Manages card-related routes.
-    *   `folders.ts`: Manages folder-related routes.
-    *   `products.ts`: Manages product-related routes.
 *   `src/back/db/index.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/db/migration.ts`: Contains the database schema, migrations, and data models.
 *   `src/back/db/client.ts`: Contains the database schema, migrations, and data models.
@@ -64,11 +66,6 @@ The backend is built with Bun and serves a JSON API.
 *   **`GET /api/cards`**: Retrieves all cards for the authenticated user.
 *   **`POST /api/cards`**: Creates a new card. Requires a `name` and `last4` in the request body.
 *   **`DELETE /api/cards/:id`**: Deletes a specific card by its ID.
-
-#### Folders
-*   **`GET /api/folders`**: Retrieves all folders for the authenticated user.
-*   **`POST /api/folders`**: Creates a new folder. Requires a `name` in the request body.
-*   **`DELETE /api/folders/:id`**: Deletes a specific folder by its ID.
 
 #### Products
 *   **`GET /api/products`**: Retrieves all products for the authenticated user.

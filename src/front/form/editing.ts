@@ -4,10 +4,8 @@ import type { ReceiptUpload, Tag } from "../../back/db";
 import {
 	cardsList,
 	fetchCards,
-	fetchFolders,
 	fetchStoreNames,
 	fetchTags,
-	foldersList,
 	storeNamesList,
 	tagsList,
 } from "../utils";
@@ -225,12 +223,10 @@ export const EditForm = (
 	const description = van.state(data.description || "");
 	const tags = van.state<Tag[]>(data.tags || []);
 	const cardId = van.state<number | null>(data.cardId || null);
-	const folderId = van.state<number | null>(data.folderId || null);
 
 	fetchStoreNames();
 	fetchTags();
 	fetchCards();
-	fetchFolders();
 
 	const handleUpload = async (e: Event) => {
 		e.preventDefault();
@@ -308,7 +304,6 @@ export const EditForm = (
 				tags: tags.val.map((t) => t.name),
 				id: data.id,
 				cardId: cardId.val,
-				folderId: folderId.val,
 			};
 
 			await onSave(receiptData);
@@ -428,24 +423,6 @@ export const EditForm = (
 							option({ value: "" }, "Default"),
 							...cardsList.val.map((card) =>
 								option({ value: card.id }, card.name),
-							),
-						],
-					),
-				),
-				div(label("Folder:"), () =>
-					select(
-						{
-							class: "md3-select",
-							value: folderId,
-							onchange: (e) => {
-								const value = (e.target as HTMLSelectElement).value;
-								folderId.val = value ? Number(value) : null;
-							},
-						},
-						[
-							option({ value: "" }, "Default"),
-							...foldersList.val.map((folder) =>
-								option({ value: folder.id }, folder.name),
 							),
 						],
 					),

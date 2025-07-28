@@ -569,8 +569,25 @@ textarea.md3-text-field {
 
 .flex {
 	display: flex;
-	align-items: center;
-	justify-content: center;
+}
+
+.flex-1 {
+	flex: 1;
+}
+
+.sidebar {
+	width: 250px;
+	padding: 16px;
+	background-color: var(--md-sys-color-surface-variant);
+}
+
+.card-item {
+	padding: 8px;
+	cursor: pointer;
+}
+
+.card-item.active {
+	background-color: var(--md-sys-color-primary-container);
 }
 
 .mb16 {

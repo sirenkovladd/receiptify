@@ -1,11 +1,9 @@
 import van, { type State } from "vanjs-core";
-import type { Receipt } from "./main";
+import type { Card, Receipt } from "./main";
 import {
 	cardsList,
 	fetchCards,
-	fetchFolders,
 	fetchStoreNames,
-	foldersList,
 	jumpPath,
 	selectedReceipt,
 	storeNamesList,
@@ -29,6 +27,9 @@ const {
 	td,
 	span,
 	datalist,
+	ul,
+	li,
+	form,
 } = van.tags;
 
 interface ProductItem {
@@ -43,9 +44,7 @@ interface ProductItem {
 
 const Chip = (text: string, type: string = "") => {
 	let chipClass = "md3-chip";
-	if (type === "folder") {
-		chipClass += " md3-chip-folder"; // Custom class for folder chips
-	} else if (type === "tag") {
+	if (type === "tag") {
 		chipClass += " md3-chip-tag"; // Custom class for tag chips
 	} else if (type === "category") {
 		chipClass += " md3-chip-category"; // Custom class for category chips
@@ -68,7 +67,6 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 				th({ class: "" }, "Place"),
 				th({ class: "" }, "Amount"),
 				th({ class: "" }, "Card"),
-				th({ class: "" }, "Folder"),
 				th({ class: "" }, "Tags"),
 			),
 		),
@@ -98,10 +96,6 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 							"Default",
 					),
 					td(
-						foldersList.val.find((folder) => folder.id === receipt.folderId)
-							?.name || "Default",
-					),
-					td(
 						div(
 							{ class: "flex flex-wrap gap-1" }, // Flex container for multiple tags
 							...(receipt.tags || []).map((tag) => Chip(tag.name, "tag")), // Tags as chips
@@ -109,6 +103,148 @@ const ReceiptsTable = (receipts: Receipt[]) => {
 					),
 				),
 			),
+		),
+	);
+};
+
+const CardsSidebar = ({
+	filterCardId,
+	selectedCardId,
+}: {
+	filterCardId: (id: number | null) => void;
+	selectedCardId: State<number | null>;
+}) => {
+	const newCardName = van.state("");
+	const newCardLast4 = van.state("");
+	const editingCard = van.state<Card | null>(null);
+
+	const addCard = async (e: Event) => {
+		e.preventDefault();
+		if (!newCardName.val.trim() || !newCardLast4.val.trim()) return;
+		const res = await fetch("/api/cards", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				name: newCardName.val,
+				last4: newCardLast4.val,
+			}),
+		});
+		if (res.ok) {
+			newCardName.val = "";
+			newCardLast4.val = "";
+			fetchCards();
+		}
+	};
+
+	const deleteCard = async (id: number) => {
+		if (confirm("Are you sure you want to delete this card?")) {
+			await fetch(`/api/cards/${id}`, { method: "DELETE" });
+			fetchCards();
+		}
+	};
+
+	const startEditing = (card: Card) => {
+		editingCard.val = { ...card };
+	};
+
+	const cancelEditing = () => {
+		editingCard.val = null;
+	};
+
+	const saveCard = async (e: Event) => {
+		e.preventDefault();
+		if (!editingCard.val) return;
+		// TODO: Implement update card functionality
+		console.log("TODO: Implement update card functionality");
+		editingCard.val = null;
+		fetchCards();
+	};
+
+	return div(
+		{ class: "sidebar" },
+		h3("Cards"),
+		div(
+			{
+				class: () =>
+					selectedCardId.val === null ? "card-item active" : "card-item",
+				onclick: () => filterCardId(null),
+			},
+			"All Cards",
+		),
+		ul(() =>
+			cardsList.val.map((card) =>
+				li(
+					{
+						class: () =>
+							selectedCardId.val === card.id ? "card-item active" : "card-item",
+						onclick: () => filterCardId(card.id),
+					},
+					() =>
+						editingCard.val?.id === card.id
+							? form(
+									{ onsubmit: saveCard },
+									input({
+										type: "text",
+										value: editingCard.val.name,
+										oninput: (e) => {
+											editingCard.val = {
+												...editingCard.val,
+												name: e.target.value,
+											};
+										},
+									}),
+									input({
+										type: "text",
+										value: editingCard.val.last4,
+										oninput: (e) => {
+											editingCard.val = {
+												...editingCard.val,
+												last4: e.target.value,
+											};
+										},
+									}),
+									button({ type: "submit" }, "Save"),
+									button({ type: "button", onclick: cancelEditing }, "Cancel"),
+								)
+							: div(
+									span(card.name),
+									button(
+										{
+											onclick: (e) => {
+												e.stopPropagation();
+												startEditing(card);
+											},
+										},
+										"Edit",
+									),
+									button(
+										{
+											onclick: (e) => {
+												e.stopPropagation();
+												deleteCard(card.id);
+											},
+										},
+										"Delete",
+									),
+								),
+				),
+			),
+		),
+		form(
+			{ onsubmit: addCard },
+			input({
+				type: "text",
+				value: newCardName,
+				placeholder: "Card Name",
+				class: "md3-text-field",
+			}),
+			input({
+				type: "text",
+				value: newCardLast4,
+				placeholder: "Last 4",
+				class: "md3-text-field",
+			}),
+			button({ type: "submit", class: "md3-button" }, "Add Card"),
 		),
 	);
 };
@@ -417,7 +553,6 @@ const DashboardPage = () => {
 
 	fetchStoreNames();
 	fetchCards();
-	fetchFolders();
 
 	// Filter states
 	const filterDateFrom = van.state(urlParams.get("dateFrom") || "");
@@ -426,6 +561,11 @@ const DashboardPage = () => {
 	const filterMaxAmount = van.state(urlParams.get("maxAmount") || "");
 	const filterType = van.state(urlParams.get("type") || "");
 	const filterStore = van.state(urlParams.get("store") || "");
+	const selectedCardId = van.state<number | null>(null);
+
+	const filterByCard = (id: number | null) => {
+		selectedCardId.val = id;
+	};
 
 	van.derive(() => {
 		const params = new URLSearchParams();
@@ -513,7 +653,8 @@ const DashboardPage = () => {
 				(!filterTags.val.length ||
 					filterTags.val.every((tag) =>
 						r.tags?.some((t) => t.name.toLowerCase() === tag.toLowerCase()),
-					)),
+					)) &&
+				(selectedCardId.val === null || r.cardId === selectedCardId.val),
 		);
 
 		return filtered.sort((a, b) => {
@@ -559,114 +700,121 @@ const DashboardPage = () => {
 	return div(
 		{ class: "md3-container" },
 		div(
-			{ class: "md3-top-app-bar" },
-			h1({ class: "md3-top-app-bar-title" }, "Dashboard"),
-		),
-		// Stats cards
-		div(
-			{ class: "md3-grid md3-grid-cols-1 md3-grid-cols-3@md mb16" },
+			{ class: "flex" },
+			CardsSidebar({ filterCardId: filterByCard, selectedCardId }),
 			div(
-				{ class: "md3-stat-card" },
-				div({ class: "md3-stat-icon" }, div({ innerHTML: "📋" })),
+				{ class: "flex-1" },
 				div(
-					{ class: "md3-stat-content" },
-					h3(() => filteredAndSortedReceipts.val.length.toString()),
-					p("Total Transactions"),
+					{ class: "md3-top-app-bar" },
+					h1({ class: "md3-top-app-bar-title" }, "Dashboard"),
 				),
-			),
-			div(
-				{ class: "md3-stat-card" },
-				div({ class: "md3-stat-icon" }, div({ innerHTML: "💰" })),
+				// Stats cards
 				div(
-					{ class: "md3-stat-content" },
-					h3(() => `${totalAmount.val.toFixed(2)}`),
-					p("Total Amount"),
+					{ class: "md3-grid md3-grid-cols-1 md3-grid-cols-3@md mb16" },
+					div(
+						{ class: "md3-stat-card" },
+						div({ class: "md3-stat-icon" }, div({ innerHTML: "📋" })),
+						div(
+							{ class: "md3-stat-content" },
+							h3(() => filteredAndSortedReceipts.val.length.toString()),
+							p("Total Transactions"),
+						),
+					),
+					div(
+						{ class: "md3-stat-card" },
+						div({ class: "md3-stat-icon" }, div({ innerHTML: "💰" })),
+						div(
+							{ class: "md3-stat-content" },
+							h3(() => `${totalAmount.val.toFixed(2)}`),
+							p("Total Amount"),
+						),
+					),
+					div(
+						{ class: "md3-stat-card" },
+						div({ class: "md3-stat-icon" }, div({ innerHTML: "🏪" })),
+						div(
+							{ class: "md3-stat-content" },
+							h3(() => {
+								const stores = new Set(
+									filteredAndSortedReceipts.val.map((r) => r.storeName),
+								);
+								return stores.size.toString();
+							}),
+							p("Unique Stores"),
+						),
+					),
 				),
-			),
-			div(
-				{ class: "md3-stat-card" },
-				div({ class: "md3-stat-icon" }, div({ innerHTML: "🏪" })),
+				// Tabs
 				div(
-					{ class: "md3-stat-content" },
-					h3(() => {
-						const stores = new Set(
-							filteredAndSortedReceipts.val.map((r) => r.storeName),
-						);
-						return stores.size.toString();
-					}),
-					p("Unique Stores"),
+					{ class: "md3-card" },
+					button(
+						{
+							class: () =>
+								`md3-tab ${activeTab.val === "transactions" ? "md3-tab-active" : ""}`,
+							onclick: () => {
+								activeTab.val = "transactions";
+							},
+						},
+						"Transactions",
+					),
+					button(
+						{
+							class: () =>
+								`md3-tab ${activeTab.val === "products" ? "md3-tab-active" : ""}`,
+							onclick: () => {
+								activeTab.val = "products";
+							},
+						},
+						"Products",
+					),
+					button(
+						{
+							class: () =>
+								`md3-tab ${activeTab.val === "analytics" ? "md3-tab-active" : ""}`,
+							onclick: () => {
+								activeTab.val = "analytics";
+							},
+						},
+						"Analytics",
+					),
 				),
+				() => {
+					if (activeTab.val === "transactions") {
+						if (receipts.val.length === 0 && !error.val) {
+							fetchReceipts();
+						}
+						return TransactionTaab({
+							loading,
+							error,
+							searchTerm,
+							sortBy,
+							sortOrder,
+							filteredAndSortedReceipts,
+							filterDateFrom,
+							filterDateTo,
+							filterMinAmount,
+							filterMaxAmount,
+							filterType,
+							filterStore,
+							filterTags,
+							clearFilters,
+						});
+					}
+					if (activeTab.val === "products") {
+						if (products.val.length === 0 && !productsError.val) {
+							fetchProducts();
+						}
+						return ProductsTab({
+							products: products,
+							loading: productsLoading,
+							error: productsError,
+						});
+					}
+					// TODO - implement Analytics tab
+					return "";
+				},
 			),
 		),
-		// Tabs
-		div(
-			{ class: "md3-card" },
-			button(
-				{
-					class: () =>
-						`md3-tab ${activeTab.val === "transactions" ? "md3-tab-active" : ""}`,
-					onclick: () => {
-						activeTab.val = "transactions";
-					},
-				},
-				"Transactions",
-			),
-			button(
-				{
-					class: () =>
-						`md3-tab ${activeTab.val === "products" ? "md3-tab-active" : ""}`,
-					onclick: () => {
-						activeTab.val = "products";
-					},
-				},
-				"Products",
-			),
-			button(
-				{
-					class: () =>
-						`md3-tab ${activeTab.val === "analytics" ? "md3-tab-active" : ""}`,
-					onclick: () => {
-						activeTab.val = "analytics";
-					},
-				},
-				"Analytics",
-			),
-		),
-		() => {
-			if (activeTab.val === "transactions") {
-				if (receipts.val.length === 0 && !error.val) {
-					fetchReceipts();
-				}
-				return TransactionTaab({
-					loading,
-					error,
-					searchTerm,
-					sortBy,
-					sortOrder,
-					filteredAndSortedReceipts,
-					filterDateFrom,
-					filterDateTo,
-					filterMinAmount,
-					filterMaxAmount,
-					filterType,
-					filterStore,
-					filterTags,
-					clearFilters,
-				});
-			}
-			if (activeTab.val === "products") {
-				if (products.val.length === 0 && !productsError.val) {
-					fetchProducts();
-				}
-				return ProductsTab({
-					products: products,
-					loading: productsLoading,
-					error: productsError,
-				});
-			}
-			// TODO - implement Analytics tab
-			return "";
-		},
 	);
 };
 
