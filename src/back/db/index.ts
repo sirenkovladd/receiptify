@@ -31,6 +31,7 @@ export interface Receipt {
 
 export interface Product {
 	id: number;
+	userId: number;
 	name: string;
 	category: string | null; // e.g., 'Dairy', 'Bakery', 'Electronics'
 	lastPrice: number | null; // Last known price for this product
@@ -239,21 +240,25 @@ export class ReceiptModel extends Model {
 // New ProductModel for interacting with the 'products' table
 export class ProductModel extends Model {
 	async findOrCreateProduct(
-		product: Omit<Product, "id" | "createdAt" | "updatedAt" | "lastPrice">,
+		userId: number,
+		product: Omit<
+			Product,
+			"id" | "createdAt" | "updatedAt" | "lastPrice" | "userId"
+		>,
 	): Promise<number> {
 		try {
 			// Get the current client (which could be a transaction client or the main pool)
 			const client = this.db.sql();
 
 			const existingProduct =
-				await client`SELECT id FROM products WHERE name = ${product.name}`;
+				await client`SELECT id FROM products WHERE name = ${product.name} AND "userId" = ${userId}`;
 			if (existingProduct.length > 0) {
 				return (existingProduct[0] as { id: number }).id;
 			}
 
 			const newProduct = await client`
-                INSERT INTO products (name, category)
-                VALUES (${product.name}, ${product.category})
+                INSERT INTO products ("userId", name, category)
+                VALUES (${userId}, ${product.name}, ${product.category})
                 RETURNING id
             `;
 			return (newProduct[0] as { id: number }).id;
@@ -263,13 +268,24 @@ export class ProductModel extends Model {
 		}
 	}
 
-	async getProductById(id: number): Promise<Product | null> {
+	async getProductById(userId: number, id: number): Promise<Product | null> {
 		try {
 			const result =
-				await this.db.sql()`SELECT * FROM products WHERE id = ${id}`;
+				await this.db.sql()`SELECT * FROM products WHERE id = ${id} AND "userId" = ${userId}`;
 			return (result[0] as Product) || null;
 		} catch (error) {
 			console.error("Error getting product by ID:", error);
+			throw error;
+		}
+	}
+
+	async getProductsByUserId(userId: number): Promise<Product[]> {
+		try {
+			const result =
+				await this.db.sql()`SELECT * FROM products WHERE "userId" = ${userId} ORDER BY name ASC`;
+			return result as Product[];
+		} catch (error) {
+			console.error("Error getting products by user ID:", error);
 			throw error;
 		}
 	}
@@ -643,7 +659,7 @@ export function getModels(db: DB) {
 				for (const item of receiptData.items) {
 					const productId =
 						item.id ??
-						(await productModel.findOrCreateProduct({
+						(await productModel.findOrCreateProduct(userId, {
 							name: item.name,
 							category: item.category ?? null,
 						}));

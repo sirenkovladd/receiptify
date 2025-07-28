@@ -155,7 +155,7 @@ describe("Database Functions", () => {
 			// Mock database responses - product already exists
 			sql.mockResolvedValueOnce([{ id: 5 }]); // find product (exists)
 
-			const productId = await productModel.findOrCreateProduct({
+			const productId = await productModel.findOrCreateProduct(1, {
 				name: "Test Product",
 				category: "Test Category",
 			});

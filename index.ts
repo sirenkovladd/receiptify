@@ -8,7 +8,7 @@ import { getRouter } from "./src/back/router";
 async function main() {
 	const config = {};
 	const sql = new DB(config);
-	await runMigrations(sql.db);
+	await runMigrations(sql.sql());
 	const models = getModels(sql);
 	const router = getRouter(models);
 	const server = serve({

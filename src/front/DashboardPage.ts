@@ -33,17 +33,12 @@ const {
 
 interface ProductItem {
 	id: number;
-	receiptId: number;
-	productId: number;
-	quantity: number;
-	unitPrice: number;
-	lineTotal: number;
+	userId: number;
+	name: string;
+	category: string | null;
+	lastPrice: number | null;
 	createdAt: string;
 	updatedAt: string;
-	productName: string;
-	productCategory: string | null;
-	storeName: string | null;
-	datetime: string;
 }
 
 const Chip = (text: string, type: string = "") => {
@@ -391,17 +386,30 @@ const TransactionTaab = ({
 	);
 };
 
+const getQueryStringFromHash = () => {
+	const hash = window.location.search;
+	const queryStringIndex = hash.indexOf("?");
+	if (queryStringIndex !== -1) {
+		return hash.substring(queryStringIndex + 1);
+	}
+	return "";
+};
+
 const DashboardPage = () => {
+	const urlParams = new URLSearchParams(getQueryStringFromHash());
 	const receipts = van.state<Receipt[]>([]);
 	const loading = van.state(true);
 	const error = van.state<string | null>(null);
-	const searchTerm = van.state("");
+	const searchTerm = van.state(urlParams.get("q") || "");
 	const sortBy = van.state<"datetime" | "totalAmount" | "storeName">(
-		"datetime",
-	); // 'datetime', 'totalAmount', 'storeName'
-	const sortOrder = van.state("desc"); // 'asc', 'desc'
-	const activeTab = van.state("transactions"); // 'transactions', 'products', 'analytics'
-	const filterTags = van.state<string[]>([]);
+		(urlParams.get("sortBy") as "datetime" | "totalAmount" | "storeName") ||
+			"datetime",
+	);
+	const sortOrder = van.state(urlParams.get("sortOrder") || "desc");
+	const activeTab = van.state(urlParams.get("tab") || "transactions");
+	const filterTags = van.state<string[]>(
+		urlParams.get("tags") ? urlParams.get("tags")?.split(",") : [],
+	);
 
 	const products = van.state<ProductItem[]>([]);
 	const productsLoading = van.state(true);
@@ -412,12 +420,40 @@ const DashboardPage = () => {
 	fetchFolders();
 
 	// Filter states
-	const filterDateFrom = van.state("");
-	const filterDateTo = van.state("");
-	const filterMinAmount = van.state("");
-	const filterMaxAmount = van.state("");
-	const filterType = van.state("");
-	const filterStore = van.state("");
+	const filterDateFrom = van.state(urlParams.get("dateFrom") || "");
+	const filterDateTo = van.state(urlParams.get("dateTo") || "");
+	const filterMinAmount = van.state(urlParams.get("minAmount") || "");
+	const filterMaxAmount = van.state(urlParams.get("maxAmount") || "");
+	const filterType = van.state(urlParams.get("type") || "");
+	const filterStore = van.state(urlParams.get("store") || "");
+
+	van.derive(() => {
+		const params = new URLSearchParams();
+
+		if (activeTab.val === "transactions") {
+			if (searchTerm.val) params.set("q", searchTerm.val);
+			if (sortBy.val !== "datetime") params.set("sortBy", sortBy.val);
+			if (sortOrder.val !== "desc") params.set("sortOrder", sortOrder.val);
+			if (activeTab.val !== "transactions") params.set("tab", activeTab.val);
+			if (filterTags.val.length > 0)
+				params.set("tags", filterTags.val.join(","));
+			if (filterDateFrom.val) params.set("dateFrom", filterDateFrom.val);
+			if (filterDateTo.val) params.set("dateTo", filterDateTo.val);
+			if (filterMinAmount.val) params.set("minAmount", filterMinAmount.val);
+			if (filterMaxAmount.val) params.set("maxAmount", filterMaxAmount.val);
+			if (filterType.val) params.set("type", filterType.val);
+			if (filterStore.val) params.set("store", filterStore.val);
+		} else {
+			params.set("tab", activeTab.val);
+		}
+
+		const queryString = params.toString();
+
+		if (window.location.search !== `?${queryString}`) {
+			const newUrl = `${window.location.pathname}${queryString ? `?${queryString}` : ""}`;
+			window.history.replaceState({}, "", newUrl);
+		}
+	});
 
 	const fetchReceipts = async () => {
 		try {
@@ -436,8 +472,6 @@ const DashboardPage = () => {
 		}
 	};
 
-	fetchReceipts();
-
 	const fetchProducts = async () => {
 		try {
 			productsLoading.val = true;
@@ -446,7 +480,11 @@ const DashboardPage = () => {
 			if (!response.ok) {
 				throw new Error("Failed to fetch products");
 			}
-			products.val = await response.json();
+			const data = await response.json();
+			products.val = data.map((item: ProductItem) => ({
+				...item,
+				lastPrice: item.lastPrice === null ? null : Number(item.lastPrice),
+			}));
 		} catch (err) {
 			productsError.val =
 				(err instanceof Error && err.message) || "An unknown error occurred.";
@@ -507,6 +545,7 @@ const DashboardPage = () => {
 		filterMaxAmount.val = "";
 		filterType.val = "";
 		filterStore.val = "";
+		filterTags.val = [];
 		sortBy.val = "datetime";
 		sortOrder.val = "desc";
 	};
@@ -578,9 +617,6 @@ const DashboardPage = () => {
 						`md3-tab ${activeTab.val === "products" ? "md3-tab-active" : ""}`,
 					onclick: () => {
 						activeTab.val = "products";
-						if (products.val.length === 0 && !productsError.val) {
-							fetchProducts();
-						}
 					},
 				},
 				"Products",
@@ -598,6 +634,9 @@ const DashboardPage = () => {
 		),
 		() => {
 			if (activeTab.val === "transactions") {
+				if (receipts.val.length === 0 && !error.val) {
+					fetchReceipts();
+				}
 				return TransactionTaab({
 					loading,
 					error,
@@ -616,6 +655,9 @@ const DashboardPage = () => {
 				});
 			}
 			if (activeTab.val === "products") {
+				if (products.val.length === 0 && !productsError.val) {
+					fetchProducts();
+				}
 				return ProductsTab({
 					products: products,
 					loading: productsLoading,
@@ -639,34 +681,34 @@ const ProductsTab = ({
 }) => {
 	// Add states for filtering and sorting
 	const searchTerm = van.state("");
-	const sortBy = van.state("productName");
+	const sortBy = van.state("name"); // Default sort by name
 	const sortOrder = van.state("asc");
 
 	const filteredAndSortedItems = van.derive(() => {
 		const term = searchTerm.val.toLowerCase();
 		const filtered = products.val.filter(
 			(item) =>
-				item.productName.toLowerCase().includes(term) ||
-				item.productCategory?.toLowerCase().includes(term),
+				item.name.toLowerCase().includes(term) ||
+				item.category?.toLowerCase().includes(term),
 		);
 
 		return filtered.sort((a, b) => {
-			const sortByVal = sortBy.val;
+			const sortByVal = sortBy.val as keyof ProductItem;
 			const aVal =
-				sortByVal === "unitPrice" || sortByVal === "quantity"
+				sortByVal === "lastPrice"
 					? a[sortByVal]
 					: String(a[sortByVal] || "").toLowerCase();
 			const bVal =
-				sortByVal === "unitPrice" || sortByVal === "quantity"
+				sortByVal === "lastPrice"
 					? b[sortByVal]
 					: String(b[sortByVal] || "").toLowerCase();
 
-			let comparison = 0;
-			if (aVal > bVal) {
-				comparison = 1;
-			} else if (aVal < bVal) {
-				comparison = -1;
-			}
+			if (aVal === null) return 1; // put nulls at the end
+			if (bVal === null) return -1;
+			if (aVal === bVal) return 0;
+
+			const comparison = aVal > bVal ? 1 : -1;
+
 			return sortOrder.val === "desc" ? -comparison : comparison;
 		});
 	});
@@ -693,11 +735,9 @@ const ProductsTab = ({
 						sortBy.val = e.target.value;
 					},
 				},
-				option({ value: "productName" }, "Sort by Name"),
-				option({ value: "productCategory" }, "Sort by Category"),
-				option({ value: "unitPrice" }, "Sort by Price"),
-				option({ value: "quantity" }, "Sort by Quantity"),
-				option({ value: "storeName" }, "Sort by Store"),
+				option({ value: "name" }, "Sort by Name"),
+				option({ value: "category" }, "Sort by Category"),
+				option({ value: "lastPrice" }, "Sort by Price"),
 			),
 			select(
 				{
@@ -728,22 +768,18 @@ const ProductsTab = ({
 					tr(
 						th("Product Name"),
 						th("Category"),
-						th("Quantity"),
-						th("Price"),
-						th("Store"),
-						th("Date"),
+						th("Last Price"),
+						th("Last Updated"),
 					),
 				),
 				tbody(
 					...filteredAndSortedItems.val.map((item) =>
 						tr(
-							td(item.productName),
-							td(item.productCategory || "N/A"),
-							td(item.quantity),
-							td(`${item.unitPrice.toFixed(2)}`),
-							td(item.storeName),
+							td(item.name),
+							td(item.category || "N/A"),
+							td(item.lastPrice !== null ? item.lastPrice.toFixed(2) : "N/A"),
 							td(
-								new Date(item.datetime).toLocaleDateString("en-US", {
+								new Date(item.updatedAt).toLocaleDateString("en-US", {
 									year: "numeric",
 									month: "short",
 									day: "numeric",

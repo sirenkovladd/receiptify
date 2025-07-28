@@ -14,7 +14,7 @@ export class ProductRoutes {
 	}
 
 	getRoutes(): Record<string, RouterTypes.RouteValue<string>> {
-		const { receiptItemModel } = this.models;
+		const { productModel } = this.models;
 
 		return {
 			"/api/products": {
@@ -29,9 +29,7 @@ export class ProductRoutes {
 					}
 
 					try {
-						const products = await receiptItemModel.getDetailedItemsByUserId(
-							user.id,
-						);
+						const products = await productModel.getProductsByUserId(user.id);
 						return new Response(JSON.stringify(products), {
 							headers: {
 								"Content-Type": "application/json",

@@ -14,6 +14,21 @@ const migrations = [
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
+	`CREATE TABLE IF NOT EXISTS cards (
+		id SERIAL PRIMARY KEY,
+		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name VARCHAR(255) NOT NULL,
+		last4 VARCHAR(4) NOT NULL,
+		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`,
+	`CREATE TABLE IF NOT EXISTS folders (
+		id SERIAL PRIMARY KEY,
+		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		name VARCHAR(255) NOT NULL,
+		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`,
 	`CREATE TABLE IF NOT EXISTS receipts (
     id SERIAL PRIMARY KEY,
     "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Link to the user who uploaded the receipt
@@ -23,16 +38,20 @@ const migrations = [
     "imageUrl" VARCHAR(255), -- URL to the uploaded receipt image
     "totalAmount" DECIMAL(10, 2) NOT NULL, -- Calculated total amount from all items
     description TEXT, -- User-added description for the receipt
+    "cardId" INTEGER REFERENCES cards(id) ON DELETE SET NULL,
+    "folderId" INTEGER REFERENCES folders(id) ON DELETE SET NULL,
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
 	`CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE, -- Product name, unique to avoid duplicates
+    "userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL, -- Product name, unique to avoid duplicates
     category VARCHAR(50), -- e.g., 'Dairy', 'Bakery', 'Electronics'
     "lastPrice" DECIMAL(10, 2), -- Last known price for this product, for historical context
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE("userId", name)
   )`,
 	`CREATE TABLE IF NOT EXISTS receipt_items (
     id SERIAL PRIMARY KEY,
@@ -66,24 +85,6 @@ const migrations = [
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`,
-	// TODO: add cardId to receipts table
-	`CREATE TABLE IF NOT EXISTS cards (
-		id SERIAL PRIMARY KEY,
-		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		name VARCHAR(255) NOT NULL,
-		last4 VARCHAR(4) NOT NULL,
-		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)`,
-	`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS "cardId" INTEGER REFERENCES cards(id) ON DELETE SET NULL`,
-	`CREATE TABLE IF NOT EXISTS folders (
-		id SERIAL PRIMARY KEY,
-		"userId" INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		name VARCHAR(255) NOT NULL,
-		"createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		"updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	)`,
-	`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS "folderId" INTEGER REFERENCES folders(id) ON DELETE SET NULL`,
 ];
 
 // A unique integer key for our advisory lock.
