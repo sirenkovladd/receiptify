@@ -4,7 +4,6 @@ import type { Models, User } from "./db";
 import {
 	AuthRoutes,
 	CardRouter,
-	FolderRouter,
 	ProductRoutes,
 	ReceiptRoutes,
 	StoreRoutes,
@@ -43,7 +42,6 @@ export function getRouter(models: Models) {
 	const storeRoutes = new StoreRoutes(models, getUserFromToken);
 	const tagRoutes = new TagRoutes(models, getUserFromToken);
 	const cardRouter = new CardRouter(models, getUserFromToken);
-	const folderRouter = new FolderRouter(models, getUserFromToken);
 	const productRoutes = new ProductRoutes(models, getUserFromToken);
 
 	const router: Record<string, RouterTypes.RouteValue<string>> = {
@@ -52,7 +50,6 @@ export function getRouter(models: Models) {
 		...storeRoutes.getRoutes(),
 		...tagRoutes.getRoutes(),
 		...cardRouter.getRoutes(),
-		...folderRouter.getRoutes(),
 		...productRoutes.getRoutes(),
 	};
 

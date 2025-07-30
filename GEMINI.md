@@ -89,6 +89,13 @@ The frontend is a single-page application (SPA) built with VanJS.
 *   `src/front/*.ts`: Each file in this directory typically represents a page or a major component of the application (e.g., `HomePage.ts`, `LoginPage.ts`, `DashboardPage.ts`, `ManagementPage.ts`).
 *   `src/front/form/editing.ts`: A component for a form to edit receipt data.
 
+### Routing and Navigation
+
+The frontend uses the `rou3` library for client-side routing, configured in `src/front/main.ts`. The `App` component manages which page is displayed based on the current URL.
+
+- **`jumpPath(path)`**: This function, located in `src/front/utils.ts`, is used for programmatic navigation. It updates the URL with `window.history.pushState` and sets the `page` state to trigger a re-render.
+- **`NavLink`**: A component in `src/front/utils.ts` that wraps the `<a>` tag to provide client-side navigation without full page reloads. It uses `jumpPath` to handle navigation and applies an `active` class to the link when the path matches the current page.
+
 ### Material Design 3 Implementation
 
 The frontend has been updated to use Material Design 3 components and styling:
